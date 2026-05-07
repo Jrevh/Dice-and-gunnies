@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Level 1 - Dice Defense</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #1a1a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: auto;
+    }
+
+    .game-container {
+      display: flex;
+      gap: 20px;
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      max-width: 100vw;
+    }
+
+    .game-board {
+      border: 2px solid #444;
+      border-radius: 5px;
+    }
+
+    #gameCanvas {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .game-ui {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      min-width: 250px;
+    }
+
+    .dice-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dice {
+      width: 60px;
+      height: 60px;
+      background: #4a4a4a;
+      border: 2px solid #666;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .dice:hover, .dice:active {
+      background: #5a5a5a;
+      transform: scale(1.05);
+    }
+
+    .dice.rolling {
+      animation: roll 0.1s infinite;
+    }
+
+    @keyframes roll {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .points-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    .turn-display {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .phase-display {
+      text-align: center;
+      font-size: 14px;
+      color: #aaa;
+      padding: 10px;
+      background: #333;
+      border-radius: 5px;
+    }
+
+    .defender-selection {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .defender-card {
+      padding: 10px;
+      background: #3a3a3a;
+      border: 2px solid #555;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 12px;
+      text-align: center;
+      color: #ccc;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .defender-card:hover, .defender-card:active {
+      background: #4a4a4a;
+      border-color: #777;
+    }
+
+    .defender-card.selected {
+      background: #4a7c59;
+      border-color: #1fb03d;
+      color: #fff;
+    }
+
+    .defender-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      background: #4a7c59;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:hover, .btn:active {
+      background: #3a6c49;
+    }
+
+    .btn:disabled {
+      background: #555;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .overlay-content {
+      background: #2a2a2a;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      color: white;
+      max-width: 90vw;
+      margin: 20px;
+    }
+
+    .overlay h2 {
+      margin: 0 0 15px 0;
+      font-size: 28px;
+    }
+
+    .overlay p {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: #ccc;
+    }
+
+    .overlay.victory h2 {
+      color: #4a7c59;
+    }
+
+    .overlay.defeated h2 {
+      color: #d22b2b;
+    }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .game-container {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+      }
+
+      .game-ui {
+        min-width: auto;
+        width: 100%;
+      }
+
+      .dice-section {
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+      }
+
+      .dice {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+      }
+
+      .points-display {
+        font-size: 12px;
+      }
+
+      .turn-display {
+        font-size: 16px;
+      }
+
+      .phase-display {
+        font-size: 12px;
+        padding: 8px;
+      }
+
+      .defender-card {
+        font-size: 11px;
+        padding: 8px;
+      }
+
+      .btn {
+        font-size: 13px;
+        padding: 10px 16px;
+      }
+
+      .overlay-content {
+        padding: 20px;
+        margin: 10px;
+      }
+
+      .overlay h2 {
+        font-size: 24px;
+      }
+
+      .overlay p {
+        font-size: 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .game-container {
+        padding: 10px;
+        gap: 10px;
+      }
+
+      .dice {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+      }
+
+      .points-display {
+        font-size: 11px;
+      }
+
+      .turn-display {
+        font-size: 14px;
+      }
+
+      .phase-display {
+        font-size: 11px;
+        padding: 6px;
+      }
+
+      .defender-card {
+        font-size: 10px;
+        padding: 6px;
+      }
+
+      .btn {
+        font-size: 12px;
+        padding: 8px 12px;
+      }
+
+      .overlay-content {
+        padding: 15px;
+      }
+
+      .overlay h2 {
+        font-size: 20px;
+      }
+
+      .overlay p {
+        font-size: 12px;
+      }
+    }
+
+    /* Landscape orientation enforcement */
+    .orientation-warning {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #1a1a1a;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      flex-direction: column;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .orientation-warning.show {
+      display: flex;
+    }
+
+    .orientation-warning h2 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #4a7c59;
+    }
+
+    .orientation-warning p {
+      font-size: 16px;
+      margin-bottom: 10px;
+      color: #ccc;
+    }
+
+    .orientation-warning .rotate-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      animation: rotate 2s infinite linear;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(90deg); }
+    }
+
+    /* Force landscape on mobile */
+    @media screen and (max-height: 500px) and (orientation: portrait) {
+      .orientation-warning {
+        display: flex !important;
+      }
+      
+      .game-container {
+        display: none !important;
+      }
+    }
+
+    /* Optimize for landscape mobile */
+    @media screen and (max-width: 1024px) and (orientation: landscape) {
+      body {
+        padding: 5px;
+      }
+
+      .game-container {
+        flex-direction: row;
+        gap: 10px;
+        padding: 10px;
+        max-height: 100vh;
+      }
+
+      .game-ui {
+        min-width: 200px;
+        max-width: 250px;
+      }
+
+      .dice-section {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .dice {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+
+      .points-display {
+        font-size: 10px;
+      }
+
+      .turn-display {
+        font-size: 12px;
+      }
+
+      .phase-display {
+        font-size: 10px;
+        padding: 5px;
+      }
+
+      .defender-card {
+        font-size: 9px;
+        padding: 5px;
+      }
+
+      .btn {
+        font-size: 10px;
+        padding: 6px 10px;
+      }
+
+      #gameCanvas {
+        max-height: 80vh;
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="game-board">
+      <canvas id="gameCanvas" width="720" height="400"></canvas>
+    </div>
+    
+    <div class="game-ui">
+      <div class="dice-section">
+        <div class="dice" id="dice">?</div>
+        <div class="points-display">
+          <span>Points: <span id="points">0</span></span>
+          <span>Bank: <span id="bank">0</span></span>
+        </div>
+        <button class="btn" id="endTurnBtn" disabled>End Turn</button>
+      </div>
+      
+      <div class="turn-display">
+        Turn: <span id="turn">1</span>
+      </div>
+      
+      <div class="phase-display" id="phase">
+        Click die to roll
+      </div>
+      
+      <div class="defender-selection">
+        <div class="defender-card" data-type="rifleman" data-cost="2">
+          Rifleman (2 pts) - 1 dmg, lane attack
+        </div>
+        <div class="defender-card" data-type="barricade" data-cost="3">
+          Barricade (3 pts) - Block movement
+        </div>
+        <div class="defender-card" data-type="shotgunner" data-cost="4">
+          Shotgunner (4 pts) - 2 dmg, +1 close range
+        </div>
+        <div class="defender-card" data-type="heavyGunner" data-cost="6">
+          Heavy Gunner (6 pts) - 2 dmg, all enemies in lane
+        </div>
+        <div class="defender-card" data-type="mechanic" data-cost="2">
+          Mechanic (2 pts) - Heal 3 HP
+        </div>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="btn" id="restartBtn">Restart Level</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div class="overlay hidden" id="gameOverlay">
+    <div class="overlay-content">
+      <h2 id="overlayTitle">Defeated</h2>
+      <p id="overlayMessage">The line did not hold.</p>
+      <p id="overlayStats">Reached Turn 1</p>
+      <button class="btn" id="overlayBtn">Try Again</button>
+    </div>
+  </div>
+
+  <script>
+    // ==================== GAME CONSTANTS ====================
+    const GRID_WIDTH = 720;
+    const GRID_HEIGHT = 400;
+    const CELL_SIZE = 80;
+    const COLS = 9;
+    const ROWS = 5;
+    
+    // Enemy types with stats
+    const ENEMY_TYPES = {
+      basic: {
+        name: "Basic",
+        hp: 3,
+        damage: 1,
+        color: "#d22b2b",
+        size: 25
+      },
+      conehead: {
+        name: "Conehead", 
+        hp: 5,
+        damage: 1,
+        color: "#ff6b35",
+        size: 28
+      },
+      buckethead: {
+        name: "Buckethead",
+        hp: 9,
+        damage: 2,
+        color: "#888888",
+        size: 30
+      }
+    };
+    
+    // Defender types with stats
+    const DEFENDER_TYPES = {
+      rifleman: {
+        name: "Rifleman",
+        cost: 2,
+        hp: 2,
+        damage: 1,
+        color: "#1fb03d",
+        laneAttack: true
+      },
+      barricade: {
+        name: "Barricade",
+        cost: 3,
+        hp: 6,
+        damage: 0,
+        color: "#8b4513",
+        blocksMovement: true
+      },
+      shotgunner: {
+        name: "Shotgunner",
+        cost: 4,
+        hp: 3,
+        damage: 2,
+        color: "#ff6347",
+        laneAttack: true,
+        closeRangeBonus: true
+      },
+      heavyGunner: {
+        name: "Heavy Gunner",
+        cost: 6,
+        hp: 5,
+        damage: 2,
+        color: "#4169e1",
+        laneAttack: true,
+        attacksAllInLane: true
+      },
+      mechanic: {
+        name: "Mechanic",
+        cost: 2,
+        hp: 5,
+        damage: 0,
+        color: "#ffd700",
+        healAmount: 3
+      }
+    };
+    
+    // Wave script - exact spawn schedule
+    const WAVE_SCRIPT = [
+      { turn: 1,  enemies: ["basic"] },
+      { turn: 3,  enemies: ["basic"] },
+      { turn: 5,  enemies: ["basic"] },
+      { turn: 6,  enemies: ["basic"] },
+      { turn: 8,  enemies: ["basic", "basic"] },
+      { turn: 10, enemies: ["basic", "basic", "conehead"] },
+      { turn: 12, enemies: ["conehead", "conehead", "basic", "basic"] },
+      { turn: 14, enemies: ["buckethead", "basic"] },
+      { turn: 16, enemies: ["buckethead", "conehead"] }
+    ];
+    
+    const DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    
+    // ==================== GAME STATE ====================
+    let state = {
+      turn: 1,
+      phase: 'waiting', // 'waiting', 'rolling', 'placing', 'enemy'
+      currentRoll: 0,
+      bankedPoints: 0,
+      availablePoints: 0,
+      diceRolled: false,
+      selectedDefender: 'rifleman',
+      enemies: [],
+      defenders: [],
+      damageNumbers: [],
+      gameOver: false,
+      victory: false,
+      enemiesSpawned: 0,
+      enemiesDefeated: 0,
+      totalEnemiesInWave: 0
+    };
+    
+    // ==================== DOM ELEMENTS ====================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const dice = document.getElementById('dice');
+    const pointsDisplay = document.getElementById('points');
+    const bankDisplay = document.getElementById('bank');
+    const turnDisplay = document.getElementById('turn');
+    const phaseDisplay = document.getElementById('phase');
+    const endTurnBtn = document.getElementById('endTurnBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const overlay = document.getElementById('gameOverlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayMessage = document.getElementById('overlayMessage');
+    const overlayStats = document.getElementById('overlayStats');
+    const overlayBtn = document.getElementById('overlayBtn');
+    
+    // ==================== UTILITY FUNCTIONS ====================
+    function getCellCenter(row, col) {
+      return {
+        x: col * CELL_SIZE + CELL_SIZE / 2,
+        y: row * CELL_SIZE + CELL_SIZE / 2
+      };
+    }
+    
+    function getRowGroundY(row) {
+      return row * CELL_SIZE + CELL_SIZE / 2;
+    }
+    
+    function getRandomLane() {
+      return Math.floor(Math.random() * ROWS);
+    }
+    
+    function rollDice() {
+      return Math.floor(Math.random() * 6) + 1;
+    }
+    
+    // ==================== SPAWN SYSTEM ====================
+    function spawnEnemy(enemyType, lane) {
+      const typeConfig = ENEMY_TYPES[enemyType];
+      const enemy = {
+        type: enemyType,
+        row: lane,
+        x: (COLS - 1) * CELL_SIZE + CELL_SIZE / 2, // Rightmost column center (col 8)
+        y: getRowGroundY(lane),
+        hp: typeConfig.hp,
+        maxHp: typeConfig.hp,
+        damage: typeConfig.damage,
+        color: typeConfig.color,
+        size: typeConfig.size,
+        flashTimer: 0
+      };
+      
+      state.enemies.push(enemy);
+      state.enemiesSpawned++;
+      console.log(`Spawned ${enemyType} at lane ${lane}, position ${enemy.x}, y: ${enemy.y}`);
+      console.log('Total enemies:', state.enemies.length);
+    }
+    
+    function checkAndSpawnEnemies() {
+      console.log(`Checking spawns for turn ${state.turn}`);
+      const currentTurnSpawn = WAVE_SCRIPT.find(entry => entry.turn === state.turn);
+      console.log('Found spawn entry:', currentTurnSpawn);
+      
+      if (currentTurnSpawn) {
+        const availableLanes = [0, 1, 2, 3, 4];
+        
+        for (const enemyType of currentTurnSpawn.enemies) {
+          let lane;
+          if (availableLanes.length > 0) {
+            const laneIndex = Math.floor(Math.random() * availableLanes.length);
+            lane = availableLanes.splice(laneIndex, 1)[0];
+          } else {
+            lane = getRandomLane(); // Allow stacking if no lanes left
+          }
+          
+          spawnEnemy(enemyType, lane);
+        }
+      } else {
+        console.log('No spawn entry for this turn');
+      }
+    }
+    
+    // ==================== COMBAT SYSTEM ====================
+    function addDamageNumber(x, y, damage, color = '#ff0000') {
+      state.damageNumbers.push({
+        x,
+        y,
+        damage,
+        color,
+        timer: 1.0,
+        velocity: -30
+      });
+    }
+    
+    function resolveCombat() {
+      console.log('=== RESOLVING COMBAT ===');
+      console.log(`Enemies: ${state.enemies.length}, Defenders: ${state.defenders.length}`);
+      
+      // Step 1: Process each lane separately
+      for (let lane = 0; lane < ROWS; lane++) {
+        const enemiesInLane = state.enemies.filter(e => e.hp > 0 && e.row === lane);
+        const defendersInLane = state.defenders.filter(d => d.hp > 0 && d.row === lane);
+        
+        if (enemiesInLane.length === 0 || defendersInLane.length === 0) continue;
+        
+        console.log(`Lane ${lane}: ${enemiesInLane.length} enemies, ${defendersInLane.length} defenders`);
+        
+        // Sort enemies by position (rightmost first)
+        enemiesInLane.sort((a, b) => b.x - a.x);
+        // Sort defenders by position (leftmost first)
+        defendersInLane.sort((a, b) => a.x - b.x);
+        
+        // Check for blocking - find the leftmost alive defender
+        let blockingDefender = null;
+        for (const defender of defendersInLane) {
+          if (defender.hp > 0) {
+            blockingDefender = defender;
+            break; // Leftmost alive defender
+          }
+        }
+        
+        // Find the first (rightmost) enemy in this lane for single-target defenders
+        let primaryTarget = null;
+        for (const enemy of enemiesInLane) {
+          if (enemy.hp <= 0) continue;
+          
+          // Check if enemy is blocked by any defender
+          if (blockingDefender && enemy.x > blockingDefender.x) {
+            console.log(`${enemy.type} blocked by ${blockingDefender.type}, cannot be targeted`);
+            continue;
+          }
+          
+          primaryTarget = enemy;
+          break; // First valid enemy found
+        }
+        
+        // Process single-target defenders (Rifleman, Shotgunner)
+        if (primaryTarget) {
+          for (const defender of defendersInLane) {
+            if (defender.hp <= 0) continue;
+            
+            const defenderType = DEFENDER_TYPES[defender.type];
+            if (!defenderType.laneAttack) continue;
+            
+            // Skip Heavy Gunner (handled separately)
+            if (defenderType.attacksAllInLane) continue;
+            
+            let damage = defenderType.damage;
+            
+            // Shotgunner close range bonus
+            if (defenderType.closeRangeBonus) {
+              const distance = Math.abs(primaryTarget.x - defender.x);
+              if (distance <= CELL_SIZE) { // Same or adjacent tile
+                damage += 1;
+                console.log(`Shotgunner close range bonus: +1 damage`);
+              }
+            }
+            
+            // Apply damage to primary target
+            primaryTarget.hp -= damage;
+            primaryTarget.flashTimer = 0.2;
+            addDamageNumber(primaryTarget.x, primaryTarget.y - 20, damage, '#00ff00');
+            console.log(`${defenderType.name} deals ${damage} damage to ${primaryTarget.type}, now has ${primaryTarget.hp} HP`);
+          }
+        }
+        
+        // Process enemy attacks and blocking
+        for (const enemy of enemiesInLane) {
+          if (enemy.hp <= 0) continue;
+          
+          // Check if enemy is blocked by any defender (only if on same tile or right adjacent)
+          const enemyCurrentCol = Math.floor(enemy.x / CELL_SIZE);
+          const defenderCol = Math.floor(blockingDefender.x / CELL_SIZE);
+          
+          if (blockingDefender && 
+              blockingDefender.hp > 0 && 
+              ((enemyCurrentCol === defenderCol) || (enemyCurrentCol === defenderCol + 1))) {
+            console.log(`${enemy.type} blocked by ${blockingDefender.type} at x=${blockingDefender.x}`);
+            
+            // Enemy ONLY attacks the blocking defender, cannot attack other defenders
+            const enemyType = ENEMY_TYPES[enemy.type];
+            blockingDefender.hp -= enemyType.damage;
+            blockingDefender.flashTimer = 0.2;
+            addDamageNumber(blockingDefender.x, blockingDefender.y - 20, enemyType.damage, '#ff0000');
+            console.log(`${blockingDefender.type} takes ${enemyType.damage} damage, now has ${blockingDefender.hp} HP`);
+            continue; // Enemy is fully blocked, skip all other combat including same-tile attacks
+          }
+          
+          // Enemy is not blocked, can counter-attack defenders on same tile
+          for (const defender of defendersInLane) {
+            if (defender.hp <= 0) continue;
+            
+            if (defender.col === enemyCurrentCol) {
+              const enemyType = ENEMY_TYPES[enemy.type];
+              defender.hp -= enemyType.damage;
+              defender.flashTimer = 0.2;
+              addDamageNumber(defender.x, defender.y - 20, enemyType.damage, '#ff0000');
+              console.log(`${enemy.type} counter-attacks ${defender.type}, now has ${defender.hp} HP`);
+            }
+          }
+        }
+        
+        // Heavy Gunner special attack - hits all enemies in lane
+        for (const defender of defendersInLane) {
+          if (defender.hp <= 0) continue;
+          
+          const defenderType = DEFENDER_TYPES[defender.type];
+          if (defenderType.attacksAllInLane) {
+            console.log(`${defenderType.name} attacks all enemies in lane ${lane}`);
+            for (const enemy of enemiesInLane) {
+              if (enemy.hp <= 0) continue;
+              
+              enemy.hp -= defenderType.damage;
+              enemy.flashTimer = 0.2;
+              addDamageNumber(enemy.x, enemy.y - 20, defenderType.damage, '#00ffff');
+              console.log(`Heavy Gunner deals ${defenderType.damage} damage to ${enemy.type}, now has ${enemy.hp} HP`);
+            }
+          }
+        }
+      }
+      
+      // Step 5: Mechanics (healing adjacent defenders)
+      for (const defender of state.defenders) {
+        if (defender.hp <= 0) continue;
+        
+        const defenderType = DEFENDER_TYPES[defender.type];
+        if (defenderType.healAmount) {
+          for (const otherDefender of state.defenders) {
+            if (otherDefender.hp <= 0 || otherDefender === defender) continue;
+            
+            const distance = Math.abs(otherDefender.x - defender.x) + Math.abs(otherDefender.row - defender.row);
+            if (distance <= CELL_SIZE) { // Adjacent
+              const maxHP = DEFENDER_TYPES[otherDefender.type].hp;
+              const healAmount = Math.min(defenderType.healAmount, maxHP - otherDefender.hp);
+              if (healAmount > 0) {
+                otherDefender.hp += healAmount;
+                addDamageNumber(otherDefender.x, otherDefender.y - 20, healAmount, '#00ffff');
+                console.log(`Mechanic heals ${otherDefender.type} for ${healAmount} HP`);
+              }
+            }
+          }
+        }
+      }
+      
+      // Remove dead units
+      const initialEnemyCount = state.enemies.length;
+      state.enemies = state.enemies.filter(e => e.hp > 0);
+      state.defenders = state.defenders.filter(d => d.hp > 0);
+      state.enemiesDefeated += initialEnemyCount - state.enemies.length;
+      
+      console.log(`Combat complete. Enemies remaining: ${state.enemies.length}`);
+    }
+    
+    function findOverlappingDefender(enemy) {
+      for (const defender of state.defenders) {
+        if (defender.hp <= 0) continue;
+        
+        // Check if they're in the same row and column (same tile)
+        const enemyCol = Math.floor(enemy.x / CELL_SIZE);
+        const defenderCol = defender.col;
+        
+        console.log(`Checking collision: ${enemy.type} at col ${enemyCol} vs ${defender.type} at col ${defenderCol}, row ${enemy.row} vs ${defender.row}`);
+        
+        if (enemy.row === defender.row && enemyCol === defenderCol) {
+          console.log(`COMBAT DETECTED: ${enemy.type} at x=${enemy.x} (col ${enemyCol}) vs ${defender.type} at x=${defender.x} (col ${defenderCol})`);
+          return defender;
+        }
+      }
+      console.log('No collision found');
+      return null;
+    }
+    
+    // ==================== TURN MANAGEMENT ====================
+    function startTurn() {
+      console.log(`Starting turn ${state.turn}`);
+      state.phase = 'waiting';
+      state.diceRolled = false;
+      state.availablePoints = 0;
+      updateUI();
+      
+      // Spawn enemies for this turn
+      console.log('Checking for enemy spawns...');
+      checkAndSpawnEnemies();
+      console.log(`After spawn check: ${state.enemies.length} enemies on board`);
+    }
+    
+    function rollDiceAnimation() {
+      state.phase = 'rolling';
+      dice.classList.add('rolling');
+      
+      let rollCount = 0;
+      const rollInterval = setInterval(() => {
+        dice.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
+        rollCount++;
+        
+        if (rollCount >= 10) {
+          clearInterval(rollInterval);
+          dice.classList.remove('rolling');
+          state.currentRoll = rollDice();
+          dice.textContent = DICE_FACES[state.currentRoll - 1];
+          state.diceRolled = true;
+          
+          // Only rolled points go to current points, banked points stay separate
+          state.availablePoints = state.currentRoll;
+          
+          state.phase = 'placing';
+          updateUI();
+        }
+      }, 100);
+    }
+    
+    function endTurn() {
+      if (state.phase !== 'placing') return;
+      
+      // Bank only the unspent points (capped at 10)
+      state.bankedPoints = Math.min(10, state.bankedPoints + state.availablePoints);
+      state.availablePoints = 0;
+      
+      // Start enemy phase
+      state.phase = 'enemy';
+      updateUI();
+      
+      setTimeout(() => {
+        executeEnemyPhase();
+      }, 500);
+    }
+    
+    function executeEnemyPhase() {
+      console.log('=== ENEMY PHASE START ===');
+      console.log(`Enemies before movement: ${state.enemies.length}`);
+      console.log(`Defenders: ${state.defenders.length}`);
+      
+      // Process each lane for movement
+      for (let lane = 0; lane < ROWS; lane++) {
+        const enemiesInLane = state.enemies.filter(e => e.hp > 0 && e.row === lane);
+        const defendersInLane = state.defenders.filter(d => d.hp > 0 && d.row === lane);
+        
+        if (enemiesInLane.length === 0) continue;
+        
+        // Find the leftmost alive defender in this lane that blocks movement
+        let blockingPosition = null;
+        let blockingDefender = null;
+        for (const defender of defendersInLane) {
+          if (defender.hp > 0) {
+            blockingPosition = defender.x;
+            blockingDefender = defender;
+            break; // Leftmost alive defender
+          }
+        }
+        
+        // Move enemies in this lane
+        for (const enemy of enemiesInLane) {
+          if (enemy.hp <= 0) continue;
+          
+          const oldX = enemy.x;
+          const newX = enemy.x - CELL_SIZE;
+          
+          // Check if movement is blocked by any defender (only if moving onto defender's tile or from right adjacent)
+          const enemyCol = Math.floor(enemy.x / CELL_SIZE);
+          const defenderCol = Math.floor(blockingPosition / CELL_SIZE);
+          const newCol = Math.floor(newX / CELL_SIZE);
+          
+          // Block only if enemy is on defender's tile or right adjacent, and would move onto defender's tile
+          if (blockingPosition !== null && 
+              ((enemyCol === defenderCol) || (enemyCol === defenderCol + 1)) && 
+              (newCol <= defenderCol)) {
+            console.log(`${enemy.type} movement blocked by ${blockingDefender.type} at x=${blockingPosition}`);
+            continue; // Don't move
+          }
+          
+          enemy.x = newX;
+          console.log(`${enemy.type} moved from x=${oldX} to x=${enemy.x} (row ${enemy.row})`);
+          
+          // Check if enemy reached left edge
+          if (enemy.x < 0) {
+            console.log('Enemy reached left edge - DEFEAT');
+            showDefeat();
+            return;
+          }
+        }
+      }
+      
+      console.log('About to resolve combat...');
+      // Resolve combat
+      resolveCombat();
+      
+      // Check win condition
+      if (state.enemiesSpawned >= getTotalEnemiesInWave() && state.enemies.length === 0) {
+        showVictory();
+        return;
+      }
+      
+      // Next turn
+      state.turn++;
+      startTurn();
+    }
+    
+    // ==================== DEFENDER PLACEMENT ====================
+    function placeDefender(x, y) {
+      if (state.phase !== 'placing' || state.gameOver) return;
+      
+      const col = Math.floor(x / CELL_SIZE);
+      const row = Math.floor(y / CELL_SIZE);
+      
+      if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
+      
+      // Check if position is occupied
+      const occupied = state.defenders.some(d => d.col === col && d.row === row);
+      if (occupied) return;
+      
+      const defenderType = DEFENDER_TYPES[state.selectedDefender];
+      const totalPoints = state.availablePoints + state.bankedPoints;
+      if (totalPoints < defenderType.cost) return;
+      
+      const center = getCellCenter(row, col);
+      const defender = {
+        type: state.selectedDefender,
+        row,
+        col,
+        x: center.x,
+        y: center.y,
+        hp: defenderType.hp,
+        maxHp: defenderType.hp,
+        flashTimer: 0
+      };
+      
+      state.defenders.push(defender);
+      
+      // Deduct from available points first, then from banked points
+      if (state.availablePoints >= defenderType.cost) {
+        state.availablePoints -= defenderType.cost;
+      } else {
+        const remainingNeeded = defenderType.cost - state.availablePoints;
+        state.availablePoints = 0;
+        state.bankedPoints -= remainingNeeded;
+      }
+      
+      updateUI();
+    }
+    
+    // ==================== RENDERING ====================
+    function drawGrid() {
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      
+      for (let i = 0; i <= COLS; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * CELL_SIZE, 0);
+        ctx.lineTo(i * CELL_SIZE, GRID_HEIGHT);
+        ctx.stroke();
+      }
+      
+      for (let i = 0; i <= ROWS; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * CELL_SIZE);
+        ctx.lineTo(GRID_WIDTH, i * CELL_SIZE);
+        ctx.stroke();
+      }
+    }
+    
+    function drawHpBar(x, y, currentHp, maxHp, width = 30, height = 4) {
+      const barY = y - 20;
+      
+      // Background
+      ctx.fillStyle = '#333';
+      ctx.fillRect(x - width/2, barY, width, height);
+      
+      // HP fill
+      const hpPercent = currentHp / maxHp;
+      let fillColor;
+      if (hpPercent > 0.5) {
+        fillColor = '#00ff00';
+      } else if (hpPercent > 0.25) {
+        fillColor = '#ffff00';
+      } else {
+        fillColor = '#ff0000';
+      }
+      
+      ctx.fillStyle = fillColor;
+      ctx.fillRect(x - width/2, barY, width * hpPercent, height);
+      
+      // Border
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - width/2, barY, width, height);
+    }
+    
+    function drawEnemies() {
+      for (const enemy of state.enemies) {
+        if (enemy.hp <= 0) continue;
+        
+        // Flash effect
+        const color = enemy.flashTimer > 0 ? '#ff0000' : enemy.color;
+        
+        // Draw enemy
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw HP bar
+        drawHpBar(enemy.x, enemy.y, enemy.hp, enemy.maxHp);
+        
+        // Update flash timer
+        if (enemy.flashTimer > 0) {
+          enemy.flashTimer -= 0.016;
+        }
+      }
+    }
+    
+    function drawDefenders() {
+      for (const defender of state.defenders) {
+        if (defender.hp <= 0) continue;
+        
+        const defenderType = DEFENDER_TYPES[defender.type];
+        
+        // Flash effect
+        const color = defender.flashTimer > 0 ? '#ff0000' : defenderType.color;
+        
+        // Draw defender
+        ctx.fillStyle = color;
+        ctx.fillRect(
+          defender.x - CELL_SIZE/3,
+          defender.y - CELL_SIZE/3,
+          CELL_SIZE * 2/3,
+          CELL_SIZE * 2/3
+        );
+        
+        // Draw HP bar
+        drawHpBar(defender.x, defender.y, defender.hp, defender.maxHp);
+        
+        // Update flash timer
+        if (defender.flashTimer > 0) {
+          defender.flashTimer -= 0.016;
+        }
+      }
+    }
+    
+    function drawDamageNumbers() {
+      for (let i = state.damageNumbers.length - 1; i >= 0; i--) {
+        const damageNum = state.damageNumbers[i];
+        
+        ctx.fillStyle = damageNum.color;
+        ctx.font = "bold 16px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(`-${damageNum.damage}`, damageNum.x, damageNum.y);
+        
+        // Update position and timer
+        damageNum.y += damageNum.velocity * 0.016;
+        damageNum.velocity += 50 * 0.016; // Gravity
+        damageNum.timer -= 0.016;
+        
+        if (damageNum.timer <= 0) {
+          state.damageNumbers.splice(i, 1);
+        }
+      }
+    }
+    
+    function render() {
+      ctx.clearRect(0, 0, GRID_WIDTH, GRID_HEIGHT);
+      
+      drawGrid();
+      drawDefenders();
+      drawEnemies();
+      drawDamageNumbers();
+      
+      // Debug info
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px Arial';
+      ctx.fillText(`Enemies: ${state.enemies.length}`, 10, 20);
+      ctx.fillText(`Turn: ${state.turn}`, 10, 35);
+    }
+    
+    // ==================== UI UPDATES ====================
+    function updateUI() {
+      pointsDisplay.textContent = state.availablePoints;
+      bankDisplay.textContent = state.bankedPoints;
+      turnDisplay.textContent = state.turn;
+      
+      const phaseText = {
+        'waiting': 'Click die to roll',
+        'rolling': 'Rolling...',
+        'placing': 'Place units or end turn',
+        'enemy': 'Enemy phase'
+      };
+      phaseDisplay.textContent = phaseText[state.phase];
+      
+      // Update dice
+      if (state.phase === 'waiting') {
+        dice.textContent = '?';
+        dice.style.cursor = 'pointer';
+      } else {
+        dice.style.cursor = 'default';
+      }
+      
+      // Update end turn button
+      endTurnBtn.disabled = state.phase !== 'placing';
+      
+      // Update defender cards
+      document.querySelectorAll('.defender-card').forEach(card => {
+        const cost = parseInt(card.dataset.cost);
+        const totalPoints = state.availablePoints + state.bankedPoints;
+        const canAfford = totalPoints >= cost && state.phase === 'placing';
+        
+        card.classList.toggle('disabled', !canAfford);
+        card.classList.toggle('selected', card.dataset.type === state.selectedDefender);
+      });
+    }
+    
+    // ==================== WIN/DEFEAT CONDITIONS ====================
+    function getTotalEnemiesInWave() {
+      return WAVE_SCRIPT.reduce((total, entry) => total + entry.enemies.length, 0);
+    }
+    
+    function showVictory() {
+      state.gameOver = true;
+      state.victory = true;
+      
+      overlayTitle.textContent = 'Victory';
+      overlayMessage.textContent = 'The line held.';
+      overlayStats.textContent = `Completed in ${state.turn} turns • ${state.enemiesDefeated} enemies defeated`;
+      overlay.className = 'overlay victory';
+      overlay.classList.remove('hidden');
+    }
+    
+    function showDefeat() {
+      state.gameOver = true;
+      state.victory = false;
+      
+      overlayTitle.textContent = 'Defeated';
+      overlayMessage.textContent = 'The line did not hold.';
+      overlayStats.textContent = `Reached Turn ${state.turn}`;
+      overlay.className = 'overlay defeated';
+      overlay.classList.remove('hidden');
+    }
+    
+    // ==================== INITIALIZATION ====================
+    function initLevel() {
+      // Reset state
+      state = {
+        turn: 1,
+        phase: 'waiting',
+        currentRoll: 0,
+        bankedPoints: 0,
+        availablePoints: 0,
+        diceRolled: false,
+        selectedDefender: 'rifleman',
+        enemies: [],
+        defenders: [],
+        damageNumbers: [],
+        gameOver: false,
+        victory: false,
+        enemiesSpawned: 0,
+        enemiesDefeated: 0,
+        totalEnemiesInWave: getTotalEnemiesInWave()
+      };
+      
+      // Hide overlay
+      overlay.classList.add('hidden');
+      
+      // Restart game loop and start first turn
+      restartGameLoop();
+      startTurn();
+    }
+    
+    // ==================== EVENT LISTENERS ====================
+    dice.addEventListener('click', () => {
+      if (state.phase === 'waiting' && !state.diceRolled) {
+        rollDiceAnimation();
+      }
+    });
+
+    // Touch controls for dice
+    dice.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (state.phase === 'waiting' && !state.diceRolled) {
+        rollDiceAnimation();
+      }
+    });
+    
+    endTurnBtn.addEventListener('click', endTurn);
+    
+    // Touch controls for end turn button
+    endTurnBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      endTurn();
+    });
+    
+    restartBtn.addEventListener('click', initLevel);
+    
+    // Touch controls for restart button
+    restartBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      initLevel();
+    });
+    
+    overlayBtn.addEventListener('click', initLevel);
+    
+    // Touch controls for overlay button
+    overlayBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      initLevel();
+    });
+    
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      placeDefender(x, y);
+    });
+
+    // Touch controls for mobile devices
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Prevent scrolling
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      placeDefender(x, y);
+    });
+    
+    document.querySelectorAll('.defender-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const cost = parseInt(card.dataset.cost);
+        const totalPoints = state.availablePoints + state.bankedPoints;
+        if (totalPoints >= cost && state.phase === 'placing') {
+          state.selectedDefender = card.dataset.type;
+          updateUI();
+        }
+      });
+
+      // Touch controls for defender cards
+      card.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const cost = parseInt(card.dataset.cost);
+        const totalPoints = state.availablePoints + state.bankedPoints;
+        if (totalPoints >= cost && state.phase === 'placing') {
+          state.selectedDefender = card.dataset.type;
+          updateUI();
+        }
+      });
+    });
+    
+    // ==================== MOBILE CANVAS SCALING ====================
+    function scaleCanvasForMobile() {
+      const canvas = document.getElementById('gameCanvas');
+      const container = canvas.parentElement;
+      const containerWidth = container.clientWidth;
+      
+      // Calculate scale to fit container while maintaining aspect ratio
+      const maxWidth = containerWidth;
+      const scale = Math.min(maxWidth / 720, 1); // Don't scale up beyond original size
+      
+      if (scale < 1) {
+        canvas.style.width = (720 * scale) + 'px';
+        canvas.style.height = (400 * scale) + 'px';
+      }
+    }
+
+    // Handle window resize for mobile
+    window.addEventListener('resize', () => {
+      scaleCanvasForMobile();
+    });
+
+    // ==================== GAME LOOP ====================
+    let gameLoopId = null;
+    
+    function gameLoop() {
+      render();
+      if (!state.gameOver) {
+        gameLoopId = requestAnimationFrame(gameLoop);
+      }
+    }
+    
+    function restartGameLoop() {
+      if (gameLoopId) {
+        cancelAnimationFrame(gameLoopId);
+      }
+      gameLoopId = null;
+      scaleCanvasForMobile(); // Scale canvas on restart
+      gameLoop();
+    }
+    
+    // Start the game
+    console.log('Starting Level 1...');
+    initLevel();
+    console.log('Level initialized, scaling canvas for mobile...');
+    scaleCanvasForMobile();
+    console.log('Level initialized, starting game loop...');
+    gameLoop();
+  </script>
+</div>
+
+  <!-- Orientation Warning for Mobile -->
+  <div class="orientation-warning" id="orientationWarning">
+    <div class="rotate-icon">📱</div>
+    <h2>Please Rotate Your Device</h2>
+    <p>This game is best played in landscape mode</p>
+    <p>Rotate your device to continue playing</p>
+  </div>
+
+  <script>
+    // Orientation detection and handling
+    function checkOrientation() {
+      const warning = document.getElementById('orientationWarning');
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const isMobile = window.innerWidth <= 1024;
+      
+      if (isPortrait && isMobile) {
+        warning.classList.add('show');
+      } else {
+        warning.classList.remove('show');
+      }
+    }
+
+    // Check orientation on load and resize
+    window.addEventListener('load', checkOrientation);
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(checkOrientation, 100); // Small delay for orientation change
+    });
+
+    // Initial check
+    checkOrientation();
+  </script>
+</body>
+</html>

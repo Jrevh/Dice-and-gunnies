@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grid Tower Defense</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="game-shell">
+    <canvas id="gameCanvas" width="720" height="400"></canvas>
+    <aside class="hud">
+      <div class="dice-section">
+        <div class="dice-container">
+          <div id="diceDisplay" class="dice">⚀</div>
+        </div>
+        <div class="points-info">
+          <div class="points-display">
+            <div class="points-label">Available</div>
+            <div id="availablePoints" class="points-value">0</div>
+          </div>
+          <div class="bank-display">
+            <div class="bank-label">Banked</div>
+            <div id="bankedPoints" class="bank-value">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="turn-info">
+        <div id="turnDisplay">Turn 1</div>
+        <div id="phaseDisplay">Rolling...</div>
+      </div>
+      <div class="defender-selection">
+        <div class="defender-card" data-type="rifleman">
+          <div class="card-content">
+            <div class="card-color" style="background: #1fb03d;"></div>
+            <div class="card-info">
+              <div class="card-name">Rifleman</div>
+              <div class="card-cost">2 pts</div>
+            </div>
+          </div>
+          <div class="card-overlay"></div>
+        </div>
+        <div class="defender-card" data-type="shieldwall">
+          <div class="card-content">
+            <div class="card-color" style="background: #8b4513;"></div>
+            <div class="card-info">
+              <div class="card-name">Shieldwall</div>
+              <div class="card-cost">3 pts</div>
+            </div>
+          </div>
+          <div class="card-overlay"></div>
+        </div>
+        <div class="defender-card" data-type="sniper">
+          <div class="card-content">
+            <div class="card-color" style="background: #4169e1;"></div>
+            <div class="card-info">
+              <div class="card-name">Sniper</div>
+              <div class="card-cost">5 pts</div>
+            </div>
+          </div>
+          <div class="card-overlay"></div>
+        </div>
+        <div class="defender-card" data-type="mortar">
+          <div class="card-content">
+            <div class="card-color" style="background: #ff6347;"></div>
+            <div class="card-info">
+              <div class="card-name">Mortar</div>
+              <div class="card-cost">4 pts</div>
+            </div>
+          </div>
+          <div class="card-overlay"></div>
+        </div>
+        <div class="defender-card" data-type="mechanic">
+          <div class="card-content">
+            <div class="card-color" style="background: #ffd700;"></div>
+            <div class="card-info">
+              <div class="card-name">Mechanic</div>
+              <div class="card-cost">2 pts</div>
+            </div>
+          </div>
+          <div class="card-overlay"></div>
+        </div>
+      </div>
+      <button id="endTurnBtn" class="end-turn-btn">End Turn</button>
+      <button id="pauseBtn" class="pause-btn">Pause</button>
+      <div class="controls-hint">
+        <div>P: Pause</div>
+        <div>R: Restart</div>
+        <div>ESC: Pause</div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Start Screen Overlay -->
+  <div id="startScreen" class="overlay-screen">
+    <div class="overlay-content">
+      <h1 class="game-title">Dice Defense</h1>
+      <p class="game-description">Roll your dice. Command your defenders. Hold the line.</p>
+      
+      <div class="defender-legend">
+        <h3>Defenders</h3>
+        <div class="legend-item">
+          <span class="legend-name">Rifleman (2)</span>
+          <span class="legend-role">— steady damage each turn</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-name">Shieldwall (3)</span>
+          <span class="legend-role">— blocks and absorbs hits</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-name">Sniper (5)</span>
+          <span class="legend-role">— high damage, hits farthest enemy</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-name">Mortar (4)</span>
+          <span class="legend-role">— area damage in 1-tile radius</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-name">Mechanic (2)</span>
+          <span class="legend-role">— heals adjacent defenders each turn</span>
+        </div>
+      </div>
+      
+      <button id="beginBtn" class="begin-btn">Begin</button>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div id="gameOverScreen" class="overlay-screen" style="display: none;">
+    <div class="overlay-content">
+      <h1 id="gameOverTitle" class="game-over-title">Defeated</h1>
+      <p id="gameOverMessage" class="game-over-message">The line did not hold.</p>
+      <p id="gameOverStats" class="game-over-stats">Fell on Wave 1</p>
+      <button id="retryBtn" class="retry-btn">Try Again</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
