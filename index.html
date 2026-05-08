@@ -613,7 +613,8 @@
       victory: false,
       enemiesSpawned: 0,
       enemiesDefeated: 0,
-      totalEnemiesInWave: 0
+      totalEnemiesInWave: 0,
+      placementIndicator: null // For mobile touch placement feedback
     };
     
     // ==================== DOM PARTS ====================
@@ -1090,6 +1091,14 @@
       ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(0, 0, GRID_WIDTH, GRID_HEIGHT);
       
+      // Save context state
+      ctx.save();
+      
+      // Apply scaling for mobile rendering
+      if (canvasScale < 1) {
+        ctx.scale(canvasScale, canvasScale);
+      }
+      
       // Draw grid
       drawGrid();
       
@@ -1177,6 +1186,48 @@
           state.damageNumbers.splice(i, 1);
         }
       }
+      
+      // Draw placement indicator for mobile touch feedback
+      if (state.placementIndicator && state.phase === 'placing') {
+        const center = getCellCenter(state.placementIndicator.row, state.placementIndicator.col);
+        const defenderType = DEFENDER_TYPES[state.selectedDefender];
+        
+        // Check if position is occupied
+        const occupied = state.defenders.some(d => d.col === state.placementIndicator.col && d.row === state.placementIndicator.row);
+        const totalPoints = state.availablePoints + state.bankedPoints;
+        const canAfford = totalPoints >= defenderType.cost;
+        
+        // Draw semi-transparent preview
+        ctx.globalAlpha = state.placementIndicator.timer;
+        
+        if (occupied) {
+          ctx.fillStyle = '#ff0000'; // Red for occupied
+        } else if (!canAfford) {
+          ctx.fillStyle = '#ff6600'; // Orange for can't afford
+        } else {
+          ctx.fillStyle = defenderType.color; // Normal color
+        }
+        
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, defenderType.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw border
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.globalAlpha = 1;
+        
+        // Update timer
+        state.placementIndicator.timer -= 0.016;
+        if (state.placementIndicator.timer <= 0) {
+          state.placementIndicator = null;
+        }
+      }
+      
+      // Restore context state
+      ctx.restore();
     }
     
     // ==================== UI MANAGEMENT ====================
@@ -1256,7 +1307,8 @@
         victory: false,
         enemiesSpawned: 0,
         enemiesDefeated: 0,
-        totalEnemiesInWave: getTotalEnemiesInWave()
+        totalEnemiesInWave: getTotalEnemiesInWave(),
+        placementIndicator: null
       };
       
       // Hide overlay
@@ -1318,9 +1370,46 @@
       e.preventDefault(); // Prevent scrolling
       const rect = canvas.getBoundingClientRect();
       const touch = e.touches[0];
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
-      placeDefender(x, y);
+      
+      // Get raw touch coordinates
+      const rawX = touch.clientX - rect.left;
+      const rawY = touch.clientY - rect.top;
+      
+      // Scale coordinates to match canvas coordinate system
+      const scaledX = rawX / canvasScale;
+      const scaledY = rawY / canvasScale;
+      
+      console.log(`Touch: raw(${rawX}, ${rawY}) -> scaled(${scaledX}, ${scaledY}), scale: ${canvasScale}`);
+      
+      // Show placement indicator
+      const col = Math.floor(scaledX / CELL_SIZE);
+      const row = Math.floor(scaledY / CELL_SIZE);
+      if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+        state.placementIndicator = { row, col, timer: 0.5 };
+      }
+      
+      placeDefender(scaledX, scaledY);
+    });
+
+    // Touch move for continuous feedback
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (state.phase !== 'placing') return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      
+      const rawX = touch.clientX - rect.left;
+      const rawY = touch.clientY - rect.top;
+      const scaledX = rawX / canvasScale;
+      const scaledY = rawY / canvasScale;
+      
+      const col = Math.floor(scaledX / CELL_SIZE);
+      const row = Math.floor(scaledY / CELL_SIZE);
+      
+      if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+        state.placementIndicator = { row, col, timer: 0.3 };
+      }
     });
     
     document.querySelectorAll('.defender-card').forEach(card => {
@@ -1346,6 +1435,8 @@
     });
     
     // ==================== MOBILE CANVAS SCALING ====================
+    let canvasScale = 1; // Global scale factor for coordinate conversion
+    
     function scaleCanvasForMobile() {
       const canvas = document.getElementById('gameCanvas');
       const container = canvas.parentElement;
@@ -1354,6 +1445,8 @@
       // Calculate scale to fit container while maintaining aspect ratio
       const maxWidth = containerWidth;
       const scale = Math.min(maxWidth / 720, 1); // Don't scale up beyond original size
+      
+      canvasScale = scale; // Store scale for coordinate conversion
       
       if (scale < 1) {
         canvas.style.width = (720 * scale) + 'px';
