@@ -332,7 +332,16 @@ function showLoadoutScreen() {
     // Create loadout screen if it doesn't exist
     createLoadoutScreen();
   }
-  document.getElementById('loadoutScreen').style.display = 'flex';
+  
+  // Hide game container and show loadout screen
+  const gameContainer = document.querySelector('.game-container');
+  if (gameContainer) gameContainer.style.display = 'none';
+  
+  loadoutScreen.style.display = 'flex';
+  
+  // Setup loadout event listeners
+  setupLoadoutEventListeners();
+  
   updateLoadoutUI();
 }
 
@@ -414,19 +423,40 @@ function createLoadoutCards() {
 
 function toggleLoadoutSelection(type) {
   const index = state.selectedLoadout.indexOf(type);
-  const card = document.querySelector(`.loadout-card[data-type="${type}"]`);
-  
   if (index > -1) {
-    // Deselect
+    // Remove from selection
     state.selectedLoadout.splice(index, 1);
-    card.classList.remove('selected');
-  } else if (state.selectedLoadout.length < 5) {
-    // Select
-    state.selectedLoadout.push(type);
-    card.classList.add('selected');
+  } else {
+    // Add to selection if not at capacity
+    if (state.selectedLoadout.length < 5) {
+      state.selectedLoadout.push(type);
+    }
   }
-  
   updateLoadoutUI();
+}
+
+function setupLoadoutEventListeners() {
+  // Add click listeners to all loadout cards
+  const loadoutCards = document.querySelectorAll('.loadout-card');
+  loadoutCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const type = card.dataset.type;
+      toggleLoadoutSelection(type);
+      
+      // Update visual selection
+      if (state.selectedLoadout.includes(type)) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
+  });
+  
+  // Add deploy button listener
+  const deployBtn = document.getElementById('deployBtn');
+  if (deployBtn) {
+    deployBtn.addEventListener('click', deployLoadout);
+  }
 }
 
 function updateLoadoutUI() {
@@ -446,9 +476,12 @@ function deployLoadout() {
   state.playerLoadout = [...state.selectedLoadout];
   state.showLoadoutScreen = false;
   
-  // Hide loadout screen
+  // Hide loadout screen and show game container
   const loadoutScreen = document.getElementById('loadoutScreen');
   if (loadoutScreen) loadoutScreen.style.display = 'none';
+  
+  const gameContainer = document.querySelector('.game-container');
+  if (gameContainer) gameContainer.style.display = 'flex';
   
   // Populate defender cards with selected units
   populateDefenderCards();
