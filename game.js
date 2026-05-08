@@ -284,6 +284,10 @@ function initialState() {
     turnPhase: 'waiting', // 'waiting', 'rolling', 'placing', 'enemy'
     diceRolled: false,
     enemyMoveTimer: 0,
+    // Points system
+    availablePoints: 0,
+    bankedPoints: 0,
+    currentRoll: 0,
     // Wave budget system
     waveBudget: 2,
     remainingBudget: 2,
@@ -486,9 +490,11 @@ function deployLoadout() {
   // Populate defender cards with selected units
   populateDefenderCards();
   
-  // Start the actual game
-  startWave(1);
-  startTurn();
+  // Start the actual game with proper initialization
+  state.gameStatus = 'playing';
+  state.turnPhase = 'waiting';
+  state.diceRolled = false;
+  updateTurnUI();
 }
 
 function showGameOver(isVictory) {
