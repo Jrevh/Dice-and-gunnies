@@ -951,8 +951,11 @@
       // Start enemy phase
       state.phase = 'enemy';
       updateUI();
+      console.log('=== STARTING ENEMY PHASE ===');
+      console.log('About to call executeEnemyPhase in 500ms...');
       
       setTimeout(() => {
+        console.log('=== CALLING EXECUTE ENEMY PHASE ===');
         executeEnemyPhase();
       }, 500);
     }
@@ -963,6 +966,12 @@
       console.log(`Defenders: ${state.defenders.length}`);
       console.log('Enemy details before movement:', state.enemies.map(e => ({type: e.type, hp: e.hp, x: e.x, row: e.row})));
       console.log('Defender details before movement:', state.defenders.map(d => ({type: d.type, hp: d.hp, x: d.x, row: d.row})));
+      
+      // Check if we should even be in combat phase
+      if (state.enemies.length === 0) {
+        console.log('No enemies to process - skipping combat');
+        return;
+      }
       
       // Process each lane for movement
       for (let lane = 0; lane < ROWS; lane++) {
@@ -1015,6 +1024,7 @@
       }
       
       console.log('About to resolve combat...');
+      console.log('=== CALLING RESOLVE COMBAT ===');
       // Resolve combat
       resolveCombat();
       
