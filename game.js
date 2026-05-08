@@ -1811,6 +1811,9 @@ function populateDefenderCards() {
   // Only show units that are in the player's loadout
   const availableUnits = state.playerLoadout || ['rifleman', 'shotgunner', 'barricade', 'mechanic', 'ticker'];
   
+  console.log('Populating defender cards with units:', availableUnits);
+  console.log('Player loadout:', state.playerLoadout);
+  
   for (const unitType of availableUnits) {
     const defenderType = DEFENDER_TYPES[unitType];
     if (!defenderType) continue;
@@ -1832,6 +1835,10 @@ function populateDefenderCards() {
     
     // Add click handler
     card.addEventListener('click', () => {
+      console.log('Card clicked:', unitType);
+      console.log('Available points:', state.availablePoints, 'Cost:', defenderType.cost);
+      console.log('Turn phase:', state.turnPhase);
+      
       if (state.availablePoints >= defenderType.cost && state.turnPhase === 'placing') {
         state.selectedDefenderType = unitType;
         updateTurnUI();
@@ -1839,6 +1846,9 @@ function populateDefenderCards() {
         // Update visual selection
         document.querySelectorAll('.defender-card').forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
+        console.log('Card selected:', unitType);
+      } else {
+        console.log('Cannot select card - insufficient points or wrong phase');
       }
     });
     
