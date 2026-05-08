@@ -494,6 +494,9 @@ function deployLoadout() {
   state.gameStatus = 'playing';
   state.turnPhase = 'waiting';
   state.diceRolled = false;
+  
+  // Setup event listeners now that game container is visible
+  setupEventListeners();
   updateTurnUI();
 }
 
@@ -1865,10 +1868,12 @@ function setupEventListeners() {
   if (beginBtn) beginBtn.addEventListener('click', beginGame);
   if (retryBtn) retryBtn.addEventListener('click', resetGame);
   
+  // Add restart button listener
+  const restartBtn = document.getElementById('restartBtn');
+  if (restartBtn) restartBtn.addEventListener('click', resetGame);
+  
   document.addEventListener('keydown', handleKeyPress);
 }
-
-setupEventListeners();
 
 // Initialize game with loadout screen
 if (state.showLoadoutScreen) {
