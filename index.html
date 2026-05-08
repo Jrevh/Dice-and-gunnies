@@ -770,6 +770,8 @@
             if (defender.hp <= 0) continue;
             
             const defenderType = DEFENDER_TYPES[defender.type];
+            console.log(`Processing defender ${defender.type} with laneAttack: ${defenderType.laneAttack}, attacksAllInLane: ${defenderType.attacksAllInLane}`);
+            
             if (!defenderType.laneAttack) continue;
             
             // Skip Heavy Gunner (handled separately)
@@ -792,6 +794,11 @@
             primaryTarget.flashTimer = 0.2;
             addDamageNumber(primaryTarget.x, primaryTarget.y - 20, damage, '#00ff00');
             console.log(`${defenderType.name} deals ${damage} damage to ${primaryTarget.type}, HP: ${oldHp} -> ${primaryTarget.hp}`);
+            
+            // Extra debugging for riflemen
+            if (defender.type === 'rifleman') {
+              console.log(`Rifleman attack details: position(${defender.x}, ${defender.y}), target(${primaryTarget.x}, ${primaryTarget.y}), damage: ${damage}`);
+            }
           }
         }
         
