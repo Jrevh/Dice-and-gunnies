@@ -515,21 +515,21 @@
     const ENEMY_TYPES = {
       basic: {
         name: "Basic",
-        hp: 3,
+        hp: 4,
         damage: 1,
         color: "#d22b2b",
         size: 25
       },
       conehead: {
         name: "Conehead", 
-        hp: 5,
+        hp: 6,
         damage: 1,
         color: "#ff6b35",
         size: 28
       },
       buckethead: {
         name: "Buckethead",
-        hp: 9,
+        hp: 10,
         damage: 2,
         color: "#888888",
         size: 30
@@ -589,15 +589,15 @@
     
     // Wave script - exact spawn schedule
     const WAVE_SCRIPT = [
-      { turn: 1,  enemies: ["basic"] },
-      { turn: 3,  enemies: ["basic"] },
-      { turn: 5,  enemies: ["basic"] },
-      { turn: 6,  enemies: ["basic"] },
-      { turn: 8,  enemies: ["basic", "basic"] },
-      { turn: 10, enemies: ["basic", "basic", "conehead"] },
-      { turn: 12, enemies: ["conehead", "conehead", "basic", "basic"] },
-      { turn: 14, enemies: ["buckethead", "basic"] },
-      { turn: 16, enemies: ["buckethead", "conehead"] }
+      { turn: 1,  enemies: ["basic", "basic"] },
+      { turn: 3,  enemies: ["basic", "basic"] },
+      { turn: 5,  enemies: ["basic", "basic"] },
+      { turn: 6,  enemies: ["basic", "basic"] },
+      { turn: 8,  enemies: ["basic", "basic", "basic"] },
+      { turn: 10, enemies: ["basic", "basic", "basic", "conehead"] },
+      { turn: 12, enemies: ["conehead", "conehead", "basic", "basic", "basic"] },
+      { turn: 14, enemies: ["buckethead", "basic", "basic"] },
+      { turn: 16, enemies: ["buckethead", "conehead", "basic"] }
     ];
     
     const DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
