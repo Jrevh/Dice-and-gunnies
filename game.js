@@ -549,13 +549,30 @@ function updateDiceAnimation(dt) {
     state.diceRolling = false;
     state.diceRolled = true;
     diceDisplay.classList.remove('rolling');
-    state.currentRoll = rollDice();
-    diceDisplay.textContent = DICE_FACES[state.currentRoll - 1];
+    
+    // Roll 3 dice and sum them
+    const roll1 = rollDice();
+    const roll2 = rollDice();
+    const roll3 = rollDice();
+    state.currentRoll = roll1 + roll2 + roll3;
+    
+    // Show the roll result
+    diceDisplay.textContent = `${roll1}+${roll2}+${roll3} = ${state.currentRoll}`;
     
     // Calculate available points with banking
     const totalPoints = state.currentRoll + state.bankedPoints;
-    state.bankedPoints = Math.min(10, totalPoints - Math.min(...Object.values(DEFENDER_TYPES).map(d => d.cost)));
-    state.availablePoints = totalPoints - state.bankedPoints;
+    const minUnitCost = Math.min(...Object.values(DEFENDER_TYPES).map(d => d.cost));
+    
+    // Bank points if we have enough for at least one unit
+    if (totalPoints >= minUnitCost) {
+      state.bankedPoints = Math.min(10, Math.floor(totalPoints / 2));
+      state.availablePoints = totalPoints - state.bankedPoints;
+    } else {
+      state.bankedPoints = 0;
+      state.availablePoints = totalPoints;
+    }
+    
+    console.log(`Dice rolled: ${roll1}+${roll2}+${roll3} = ${state.currentRoll}, Available: ${state.availablePoints}, Banked: ${state.bankedPoints}`);
     
     state.turnPhase = 'placing';
     updateTurnUI();
