@@ -754,10 +754,13 @@
         for (const enemy of enemiesInLane) {
           if (enemy.hp <= 0) continue;
           
-          // Check if enemy is blocked by any defender
+          // Check if enemy is blocked by a barricade-type defender
           if (blockingDefender && enemy.x > blockingDefender.x) {
-            console.log(`${enemy.type} blocked by ${blockingDefender.type}, cannot be targeted`);
-            continue;
+            const blockerType = DEFENDER_TYPES[blockingDefender.type];
+            if (blockerType && blockerType.blocksMovement) {
+              console.log(`${enemy.type} blocked by ${blockingDefender.type}, cannot be targeted`);
+              continue;
+            }
           }
           
           primaryTarget = enemy;
@@ -765,6 +768,10 @@
         }
         
         // Process single-target defenders (Rifleman, Shotgunner)
+        console.log(`Lane ${lane}: Primary target found: ${primaryTarget ? primaryTarget.type : 'none'}`);
+        console.log(`Lane ${lane}: Enemies in lane: ${enemiesInLane.map(e => `${e.type}(hp:${e.hp}, x:${e.x})`).join(', ')}`);
+        console.log(`Lane ${lane}: Blocking defender: ${blockingDefender ? `${blockingDefender.type}(x:${blockingDefender.x})` : 'none'}`);
+        
         if (primaryTarget) {
           for (const defender of defendersInLane) {
             if (defender.hp <= 0) continue;
