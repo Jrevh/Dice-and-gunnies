@@ -782,10 +782,11 @@
             }
             
             // Apply damage to primary target
+            const oldHp = primaryTarget.hp;
             primaryTarget.hp -= damage;
             primaryTarget.flashTimer = 0.2;
             addDamageNumber(primaryTarget.x, primaryTarget.y - 20, damage, '#00ff00');
-            console.log(`${defenderType.name} deals ${damage} damage to ${primaryTarget.type}, now has ${primaryTarget.hp} HP`);
+            console.log(`${defenderType.name} deals ${damage} damage to ${primaryTarget.type}, HP: ${oldHp} -> ${primaryTarget.hp}`);
           }
         }
         
@@ -869,11 +870,17 @@
       
       // Remove dead units
       const initialEnemyCount = state.enemies.length;
+      const initialDefenderCount = state.defenders.length;
       state.enemies = state.enemies.filter(e => e.hp > 0);
       state.defenders = state.defenders.filter(d => d.hp > 0);
-      state.enemiesDefeated += initialEnemyCount - state.enemies.length;
+      const enemiesRemoved = initialEnemyCount - state.enemies.length;
+      const defendersRemoved = initialDefenderCount - state.defenders.length;
+      state.enemiesDefeated += enemiesRemoved;
       
-      console.log(`Combat complete. Enemies remaining: ${state.enemies.length}`);
+      console.log(`Combat complete. Enemies: ${initialEnemyCount} -> ${state.enemies.length} (${enemiesRemoved} removed)`);
+      console.log(`Defenders: ${initialDefenderCount} -> ${state.defenders.length} (${defendersRemoved} removed)`);
+      console.log('Enemy details after combat:', state.enemies.map(e => ({type: e.type, hp: e.hp, x: e.x, row: e.row})));
+      console.log('Defender details after combat:', state.defenders.map(d => ({type: d.type, hp: d.hp, x: d.x, row: d.row})));
     }
     
     // ==================== TURN MANAGEMENT ====================
@@ -935,6 +942,8 @@
       console.log('=== ENEMY PHASE START ===');
       console.log(`Enemies before movement: ${state.enemies.length}`);
       console.log(`Defenders: ${state.defenders.length}`);
+      console.log('Enemy details before movement:', state.enemies.map(e => ({type: e.type, hp: e.hp, x: e.x, row: e.row})));
+      console.log('Defender details before movement:', state.defenders.map(d => ({type: d.type, hp: d.hp, x: d.x, row: d.row})));
       
       // Process each lane for movement
       for (let lane = 0; lane < ROWS; lane++) {
@@ -1118,20 +1127,20 @@
         // Draw defender
         ctx.fillStyle = defender.flashTimer > 0 ? '#ffffff' : defenderType.color;
         
-        // Mobile: make defenders larger and more visible
-        const isMobile = window.innerWidth <= 768;
-        const defenderSize = isMobile ? defenderType.size * 1.5 : defenderType.size;
+        // Always make defenders visible with consistent sizing
+        const defenderSize = defenderType.size;
         
         ctx.beginPath();
         ctx.arc(defender.x, defender.y, defenderSize, 0, Math.PI * 2);
         ctx.fill();
         
-        // Add border for better visibility on mobile
-        if (isMobile) {
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
+        // Always add border for visibility
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        // Debug: Log defender drawing
+        console.log(`Drawing defender ${defender.type} at (${defender.x}, ${defender.y}) with size ${defenderSize}`);
         
         // Draw HP bar
         drawHpBar(defender.x, defender.y, defender.hp, defender.maxHp);
@@ -1162,20 +1171,20 @@
         // Draw enemy
         ctx.fillStyle = enemy.flashTimer > 0 ? '#ffffff' : enemy.color;
         
-        // Mobile: make enemies larger and more visible
-        const isMobile = window.innerWidth <= 768;
-        const enemySize = isMobile ? enemy.size * 1.5 : enemy.size;
+        // Always make enemies visible with consistent sizing
+        const enemySize = enemy.size;
         
         ctx.beginPath();
         ctx.arc(enemy.x, enemy.y, enemySize, 0, Math.PI * 2);
         ctx.fill();
         
-        // Add border for better visibility on mobile
-        if (isMobile) {
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
+        // Always add border for visibility
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        // Debug: Log enemy drawing
+        console.log(`Drawing enemy ${enemy.type} at (${enemy.x}, ${enemy.y}) with size ${enemySize}`);
         
         // Draw HP bar
         drawHpBar(enemy.x, enemy.y, enemy.hp, enemy.maxHp);
@@ -1226,13 +1235,15 @@
           ctx.fillStyle = defenderType.color; // Normal color
         }
         
-        // Mobile: use larger size for placement indicator
-        const isMobile = window.innerWidth <= 768;
-        const indicatorSize = isMobile ? defenderType.size * 1.5 : defenderType.size;
+        // Use consistent size for placement indicator
+        const indicatorSize = defenderType.size;
         
         ctx.beginPath();
         ctx.arc(center.x, center.y, indicatorSize, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Debug: Log placement indicator
+        console.log(`Drawing placement indicator at (${center.x}, ${center.y}) with size ${indicatorSize}`);
         
         // Draw border
         ctx.strokeStyle = '#ffffff';
@@ -1390,32 +1401,27 @@
       const rect = canvas.getBoundingClientRect();
       const touch = e.touches[0];
       
-      // Get canvas actual dimensions vs displayed dimensions
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const rectWidth = rect.width;
-      const rectHeight = rect.height;
-      
-      // Calculate scale factors
-      const scaleX = canvasWidth / rectWidth;
-      const scaleY = canvasHeight / rectHeight;
-      
-      // Get raw touch coordinates and scale to canvas coordinates
+      // Get raw touch coordinates relative to canvas
       const rawX = touch.clientX - rect.left;
       const rawY = touch.clientY - rect.top;
-      const canvasX = rawX * scaleX;
-      const canvasY = rawY * scaleY;
       
-      console.log(`Touch: raw(${rawX}, ${rawY}) -> canvas(${canvasX}, ${canvasY}), scale(${scaleX}, ${scaleY})`);
+      // Calculate grid position directly
+      const col = Math.floor(rawX / (rect.width / COLS));
+      const row = Math.floor(rawY / (rect.height / ROWS));
+      
+      console.log(`Touch: raw(${rawX}, ${rawY}) -> grid(${col}, ${row})`);
+      console.log(`Canvas rect: ${rect.width}x${rect.height}, Cell size: ${rect.width / COLS}x${rect.height / ROWS}`);
       
       // Show placement indicator
-      const col = Math.floor(canvasX / CELL_SIZE);
-      const row = Math.floor(canvasY / CELL_SIZE);
       if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
         state.placementIndicator = { row, col, timer: 0.5 };
+        
+        // Convert to canvas coordinates for placement
+        const canvasX = col * CELL_SIZE + CELL_SIZE / 2;
+        const canvasY = row * CELL_SIZE + CELL_SIZE / 2;
+        
+        placeDefender(canvasX, canvasY);
       }
-      
-      placeDefender(canvasX, canvasY);
     });
 
     // Touch move for continuous feedback
@@ -1426,24 +1432,13 @@
       const rect = canvas.getBoundingClientRect();
       const touch = e.touches[0];
       
-      // Get canvas actual dimensions vs displayed dimensions
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const rectWidth = rect.width;
-      const rectHeight = rect.height;
-      
-      // Calculate scale factors
-      const scaleX = canvasWidth / rectWidth;
-      const scaleY = canvasHeight / rectHeight;
-      
-      // Get raw touch coordinates and scale to canvas coordinates
+      // Get raw touch coordinates relative to canvas
       const rawX = touch.clientX - rect.left;
       const rawY = touch.clientY - rect.top;
-      const canvasX = rawX * scaleX;
-      const canvasY = rawY * scaleY;
       
-      const col = Math.floor(canvasX / CELL_SIZE);
-      const row = Math.floor(canvasY / CELL_SIZE);
+      // Calculate grid position directly
+      const col = Math.floor(rawX / (rect.width / COLS));
+      const row = Math.floor(rawY / (rect.height / ROWS));
       
       if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
         state.placementIndicator = { row, col, timer: 0.3 };
