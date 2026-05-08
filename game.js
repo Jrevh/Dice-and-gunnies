@@ -24,50 +24,106 @@ const DEFENDER_SHOT_INTERVAL = 2;
 const DEFENDER_DAMAGE = 34;
 
 const DEFENDER_TYPES = {
+
+  // ── ATTACKERS ──
   rifleman: {
     name: "Rifleman",
-    cost: 2,
-    hp: 6,
-    damage: 2,
+    cost: 2, hp: 6, maxHp: 6, damage: 2,
     color: "#1fb03d",
-    flashColor: '#ff4d4d',
-  },
-  shieldwall: {
-    name: "Shieldwall",
-    cost: 3,
-    hp: 20,
-    damage: 0,
-    color: "#8b4513",
-    flashColor: '#ff6b6b',
-    blocksMovement: true,
+    role: "Steady damage. Hits the first enemy in its tile.",
+    archetype: "attacker"
   },
   sniper: {
     name: "Sniper",
-    cost: 5,
-    hp: 4,
-    damage: 5,
+    cost: 5, hp: 4, maxHp: 4, damage: 5,
     color: "#4169e1",
-    flashColor: '#ff4d4d',
+    role: "High damage. Always hits the furthest (rightmost) enemy in its lane.",
     longRange: true,
+    archetype: "attacker"
   },
   mortar: {
     name: "Mortar",
-    cost: 4,
-    hp: 6,
-    damage: 3,
+    cost: 4, hp: 6, maxHp: 6, damage: 3,
     color: "#ff6347",
-    flashColor: '#ff4d4d',
-    areaDamage: true,
+    role: "Area damage. Hits all enemies within 1-tile radius each turn.",
+    teamDamage: true,
+    archetype: "attacker"
   },
+  overclocker: {
+    name: "Overclocker",
+    cost: 3, hp: 3, maxHp: 3, damage: 1,
+    color: "#ff00ff",
+    role: "Fires twice per turn. Fragile but high output over time.",
+    doubleAttack: true,
+    archetype: "attacker"
+  },
+  obliterator: {
+    name: "Obliterator",
+    cost: 10, hp: 1, maxHp: 1, damage: 999,
+    color: "#ff2200",
+    role: "On placement: instantly kills all enemies in its lane, then removes itself.",
+    onPlacement: true,
+    archetype: "attacker"
+  },
+
+  // ── BLOCKERS ──
+  barricade: {
+    name: "Barricade",
+    cost: 2, hp: 8, maxHp: 8, damage: 0,
+    color: "#8b6914",
+    role: "Cheap wall. Buys 2–4 turns against basic enemies.",
+    archetype: "blocker"
+  },
+  fortwall: {
+    name: "Fortwall",
+    cost: 5, hp: 20, maxHp: 20, damage: 0,
+    color: "#5c5c5c",
+    role: "Premium wall. Tanks a Buckethead for many turns.",
+    archetype: "blocker"
+  },
+
+  // ── SUPPORT ──
   mechanic: {
     name: "Mechanic",
-    cost: 2,
-    hp: 5,
-    damage: 0,
+    cost: 2, hp: 5, maxHp: 5, damage: 0,
     color: "#ffd700",
-    flashColor: '#ff6b6b',
-    heals: true,
-    healAmount: 3,
+    role: "Heals all adjacent defenders for 3 HP each turn.",
+    heals: true, healAmount: 3,
+    archetype: "support"
+  },
+  scout: {
+    name: "Scout",
+    cost: 1, hp: 2, maxHp: 2, damage: 0,
+    color: "#00cfcf",
+    role: "Shows the next wave's enemy list in the UI. No combat value.",
+    reveals: true,
+    archetype: "support"
+  },
+
+  // ── PRODUCERS ──
+  ticker: {
+    name: "Ticker (P1)",
+    cost: 2, hp: 4, maxHp: 4, damage: 0,
+    color: "#a0ff80",
+    role: "Adds +1 to your spendable points each player turn while alive.",
+    producerType: "current", productionValue: 1,
+    archetype: "producer"
+  },
+  vault: {
+    name: "Vault (P2)",
+    cost: 3, hp: 5, maxHp: 5, damage: 0,
+    color: "#80c8ff",
+    role: "Adds +2 directly to your DV bank each turn. Raises bank cap from 10 to 15 while alive.",
+    producerType: "bank", productionValue: 2, bankCapBonus: 5,
+    archetype: "producer"
+  },
+  upgrader: {
+    name: "Upgrader (P3)",
+    cost: 3, hp: 3, maxHp: 3, damage: 0,
+    color: "#ffcc00",
+    role: "Upgrades your base die one step: d4→d6→d8→d10→d12→d20. Cost increases per upgrade.",
+    producerType: "dieUpgrade",
+    archetype: "producer"
   },
 };
 
@@ -120,24 +176,24 @@ const PARTICLE_LIFETIME = 0.4;
 const SCREEN_SHAKE_DURATION = 0.3;
 const SCREEN_SHAKE_INTENSITY = 4;
 
-const DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+const DICE_FACES = ['⚀', '⚁', '⚂', '⚃'];
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const diceDisplay = document.getElementById("diceDisplay");
-const availablePointsDisplay = document.getElementById("availablePoints");
-const bankedPointsDisplay = document.getElementById("bankedPoints");
-const turnDisplay = document.getElementById("turnDisplay");
-const phaseDisplay = document.getElementById("phaseDisplay");
+const diceDisplay = document.getElementById("dice");
+const availablePointsDisplay = document.getElementById("points");
+const bankedPointsDisplay = document.getElementById("bank");
+const turnDisplay = document.getElementById("turn");
+const phaseDisplay = document.getElementById("phase");
 const endTurnBtn = document.getElementById("endTurnBtn");
-const pauseBtn = document.getElementById("pauseBtn");
-const startScreen = document.getElementById("startScreen");
-const gameOverScreen = document.getElementById("gameOverScreen");
-const beginBtn = document.getElementById("beginBtn");
-const retryBtn = document.getElementById("retryBtn");
-const gameOverTitle = document.getElementById("gameOverTitle");
-const gameOverMessage = document.getElementById("gameOverMessage");
-const gameOverStats = document.getElementById("gameOverStats");
+const pauseBtn = null; 
+const startScreen = null; 
+const gameOverScreen = document.getElementById("gameOverlay");
+const beginBtn = null; 
+const retryBtn = document.getElementById("overlayBtn");
+const gameOverTitle = document.getElementById("overlayTitle");
+const gameOverMessage = document.getElementById("overlayMessage");
+const gameOverStats = document.getElementById("overlayStats");
 
 const restartButtonRect = {
   width: 180,
@@ -220,24 +276,13 @@ function initialState() {
     particles: [],
     damageNumbers: [],
     placementHighlights: [],
-    gameStatus: "playing",
+    gameStatus: "loadoutScreen",
     wave: 1,
     screenShakeTimer: 0,
     screenShakeX: 0,
-    screenShakeY: 0,
-    selectedDefenderType: 'rifleman',
-    isPaused: false,
-    // Turn-based system
     turn: 1,
-    currentRoll: 0,
-    bankedPoints: 0,
-    availablePoints: 0,
-    isPlayerTurn: true,
-    diceRolled: false,
-    diceRolling: false,
-    diceAnimationTimer: 0,
-    diceDisplayFaces: [],
     turnPhase: 'waiting', // 'waiting', 'rolling', 'placing', 'enemy'
+    diceRolled: false,
     enemyMoveTimer: 0,
     // Wave budget system
     waveBudget: 2,
@@ -247,9 +292,17 @@ function initialState() {
     waveTurnCounter: 0,
     nextWaveReady: false,
     // Game states
-    showStartScreen: true,
+    showStartScreen: false,
+    showLoadoutScreen: true,
     totalEnemiesDefeated: 0,
     maxWaveReached: 1,
+    // New producer and die upgrade system
+    currentDieSides: 4,
+    dieUpgradeLevel: 0,
+    upgraderCount: 0,
+    selectedLoadout: [],
+    effectiveBankCap: 10,
+    laneFlashTimers: [], // For Obliterator effect
   };
 }
 
@@ -258,36 +311,176 @@ let lastTime = 0;
 
 function resetGame() {
   Object.assign(state, initialState());
-  startScreen.style.display = 'flex';
-  gameOverScreen.style.display = 'none';
+  if (startScreen) startScreen.style.display = 'flex';
+  if (gameOverScreen) gameOverScreen.style.display = 'none';
 }
 
 function beginGame() {
+  if (state.showLoadoutScreen) {
+    // This should only be called from loadout screen
+    return;
+  }
   state.showStartScreen = false;
-  startScreen.style.display = 'none';
+  state.showLoadoutScreen = true;
+  if (startScreen) startScreen.style.display = 'none';
+  showLoadoutScreen();
+}
+
+function showLoadoutScreen() {
+  const loadoutScreen = document.getElementById('loadoutScreen');
+  if (!loadoutScreen) {
+    // Create loadout screen if it doesn't exist
+    createLoadoutScreen();
+  }
+  document.getElementById('loadoutScreen').style.display = 'flex';
+  updateLoadoutUI();
+}
+
+function createLoadoutScreen() {
+  const loadoutScreen = document.createElement('div');
+  loadoutScreen.id = 'loadoutScreen';
+  loadoutScreen.className = 'loadout-screen';
+  loadoutScreen.innerHTML = `
+    <div class="loadout-container">
+      <h2>Select Your Loadout</h2>
+      <p>Choose exactly 5 units for your deck</p>
+      <div class="loadout-counter" id="loadoutCounter">0 / 5 selected</div>
+      
+      <div class="archetype-section">
+        <h3>Attackers</h3>
+        <div class="loadout-cards" id="attackerCards"></div>
+      </div>
+      
+      <div class="archetype-section">
+        <h3>Blockers</h3>
+        <div class="loadout-cards" id="blockerCards"></div>
+      </div>
+      
+      <div class="archetype-section">
+        <h3>Support</h3>
+        <div class="loadout-cards" id="supportCards"></div>
+      </div>
+      
+      <div class="archetype-section">
+        <h3>Producers</h3>
+        <div class="loadout-cards" id="producerCards"></div>
+      </div>
+      
+      <button id="deployBtn" class="deploy-btn" disabled>Deploy</button>
+    </div>
+  `;
+  
+  document.body.appendChild(loadoutScreen);
+  
+  // Add event listeners
+  document.getElementById('deployBtn').addEventListener('click', deployLoadout);
+  
+  // Create loadout cards
+  createLoadoutCards();
+}
+
+function createLoadoutCards() {
+  const archetypeContainers = {
+    attacker: document.getElementById('attackerCards'),
+    blocker: document.getElementById('blockerCards'),
+    support: document.getElementById('supportCards'),
+    producer: document.getElementById('producerCards')
+  };
+  
+  for (const [type, defenderType] of Object.entries(DEFENDER_TYPES)) {
+    const card = document.createElement('div');
+    card.className = 'loadout-card';
+    card.dataset.type = type;
+    
+    card.innerHTML = `
+      <div class="card-header" style="background-color: ${defenderType.color}">
+        <h3>${defenderType.name}</h3>
+        <div class="card-cost">${defenderType.cost}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-stats">
+          <span>HP: ${defenderType.hp}</span>
+          ${defenderType.damage > 0 ? `<span>DMG: ${defenderType.damage}</span>` : ''}
+        </div>
+        <p class="card-role">${defenderType.role}</p>
+        <div class="card-archetype">${defenderType.archetype}</div>
+      </div>
+    `;
+    
+    card.addEventListener('click', () => toggleLoadoutSelection(type));
+    archetypeContainers[defenderType.archetype].appendChild(card);
+  }
+}
+
+function toggleLoadoutSelection(type) {
+  const index = state.selectedLoadout.indexOf(type);
+  const card = document.querySelector(`.loadout-card[data-type="${type}"]`);
+  
+  if (index > -1) {
+    // Deselect
+    state.selectedLoadout.splice(index, 1);
+    card.classList.remove('selected');
+  } else if (state.selectedLoadout.length < 5) {
+    // Select
+    state.selectedLoadout.push(type);
+    card.classList.add('selected');
+  }
+  
+  updateLoadoutUI();
+}
+
+function updateLoadoutUI() {
+  const counter = document.getElementById('loadoutCounter');
+  const deployBtn = document.getElementById('deployBtn');
+  
+  counter.textContent = `${state.selectedLoadout.length} / 5 selected`;
+  deployBtn.disabled = state.selectedLoadout.length !== 5;
+}
+
+function deployLoadout() {
+  if (state.selectedLoadout.length !== 5) {
+    alert('Please select exactly 5 units for your loadout!');
+    return;
+  }
+  
+  state.playerLoadout = [...state.selectedLoadout];
+  state.showLoadoutScreen = false;
+  
+  // Hide loadout screen
+  const loadoutScreen = document.getElementById('loadoutScreen');
+  if (loadoutScreen) loadoutScreen.style.display = 'none';
+  
+  // Populate defender cards with selected units
+  populateDefenderCards();
+  
+  // Start the actual game
   startWave(1);
   startTurn();
 }
 
 function showGameOver(isVictory) {
   state.gameStatus = isVictory ? 'win' : 'gameOver';
-  gameOverScreen.style.display = 'flex';
+  if (gameOverScreen) gameOverScreen.style.display = 'flex';
   
   if (isVictory) {
-    gameOverTitle.textContent = 'Victory';
-    gameOverTitle.className = 'game-over-title victory';
-    gameOverMessage.textContent = 'The line held.';
-    gameOverStats.textContent = `Survived ${state.turn} turns • Defeated ${state.totalEnemiesDefeated} enemies`;
+    if (gameOverTitle) {
+      gameOverTitle.textContent = 'Victory';
+      gameOverTitle.className = 'game-over-title victory';
+    }
+    if (gameOverMessage) gameOverMessage.textContent = 'The line held.';
+    if (gameOverStats) gameOverStats.textContent = `Survived ${state.turn} turns • Defeated ${state.totalEnemiesDefeated} enemies`;
   } else {
-    gameOverTitle.textContent = 'Defeated';
-    gameOverTitle.className = 'game-over-title defeated';
-    gameOverMessage.textContent = 'The line did not hold.';
-    gameOverStats.textContent = `Fell on Wave ${state.wave}`;
+    if (gameOverTitle) {
+      gameOverTitle.textContent = 'Defeat';
+      gameOverTitle.className = 'game-over-title defeat';
+    }
+    if (gameOverMessage) gameOverMessage.textContent = 'The line did not hold.';
+    if (gameOverStats) gameOverStats.textContent = `Reached Turn ${state.turn} • Defeated ${state.totalEnemiesDefeated} enemies`;
   }
 }
 
 function rollDice() {
-  return Math.floor(Math.random() * 6) + 1;
+  return Math.floor(Math.random() * state.currentDieSides) + 1;
 }
 
 function startDiceRoll() {
@@ -330,8 +523,34 @@ function updateDiceAnimation(dt) {
 function startTurn() {
   state.turnPhase = 'waiting';
   state.diceRolled = false;
-  state.availablePoints = 0;
+  // Do NOT reset availablePoints - it carries from producer income
+  
   updateTurnUI();
+}
+
+function resolveProducers() {
+  // Calculate effective bank cap
+  const hasVault = state.defenders.some(d => d.hp > 0 && d.type === 'vault');
+  state.effectiveBankCap = hasVault ? 15 : 10;
+  
+  for (const defender of state.defenders) {
+    if (defender.hp <= 0) continue;
+    const type = DEFENDER_TYPES[defender.type];
+    
+    if (type.producerType === 'current') {
+      // Ticker: Add +1 to available points
+      state.availablePoints += type.productionValue;
+    } else if (type.producerType === 'bank') {
+      // Vault: Add +2 to banked points with cap enforcement
+      state.bankedPoints = Math.min(state.effectiveBankCap, state.bankedPoints + type.productionValue);
+    }
+  }
+  
+  // Scout reveals next wave
+  const scouts = state.defenders.filter(d => d.hp > 0 && DEFENDER_TYPES[d.type].reveals);
+  if (scouts.length > 0) {
+    // This will be handled in UI update
+  }
 }
 
 function handleDiceClick() {
@@ -342,8 +561,12 @@ function handleDiceClick() {
 }
 
 function endTurn() {
-  // Bank remaining points
-  state.bankedPoints = Math.min(10, state.bankedPoints + state.availablePoints);
+  // Bank remaining points with cap enforcement
+  const hasVault = state.defenders.some(d => d.hp > 0 && d.type === 'vault');
+  const effectiveCap = hasVault ? 15 : 10;
+  state.bankedPoints = Math.min(effectiveCap, state.bankedPoints + state.availablePoints);
+  
+  // Reset available points for next turn
   state.availablePoints = 0;
   
   // Start enemy phase
@@ -363,35 +586,8 @@ function addDamageNumber(x, y, damage, color = '#ff0000') {
   });
 }
 
-function resolveCombat() {
-  const combatLog = [];
-  
-  // Step 2: Adjacent combat
-  for (const enemy of state.enemies) {
-    if (enemy.hp <= 0) continue;
-    
-    const overlappingDefender = findOverlappingDefender(enemy);
-    if (overlappingDefender && overlappingDefender.hp > 0) {
-      const defenderType = DEFENDER_TYPES[overlappingDefender.type];
-      const enemyType = ENEMY_TYPES[enemy.type];
-      
-      // Defender deals damage to enemy
-      if (defenderType.damage > 0) {
-        enemy.hp -= defenderType.damage;
-        addDamageNumber(enemy.x, enemy.y - 20, defenderType.damage, '#00ff00');
-        combatLog.push(`${overlappingDefender.type} deals ${defenderType.damage} to ${enemy.type}`);
-      }
-      
-      // Enemy deals damage to defender
-      if (enemy.hp > 0) {
-        overlappingDefender.hp -= enemyType.damage;
-        addDamageNumber(overlappingDefender.x, overlappingDefender.y - 20, enemyType.damage, '#ff0000');
-        combatLog.push(`${enemy.type} deals ${enemyType.damage} to ${overlappingDefender.type}`);
-      }
-    }
-  }
-  
-  // Step 3: Snipers fire at furthest enemy in lane
+function resolveSpecialAttackers() {
+  // SNIPER: fires at furthest enemy in lane
   for (const defender of state.defenders) {
     if (defender.hp <= 0) continue;
     
@@ -400,35 +596,68 @@ function resolveCombat() {
       const enemiesInLane = state.enemies.filter(e => e.hp > 0 && e.row === defender.row);
       if (enemiesInLane.length > 0) {
         const furthestEnemy = enemiesInLane.reduce((furthest, enemy) => 
-          enemy.x > furthest.x ? enemy : furthest
+          enemy.col > furthest.col ? enemy : furthest
         );
         furthestEnemy.hp -= defenderType.damage;
         addDamageNumber(furthestEnemy.x, furthestEnemy.y - 20, defenderType.damage, '#00ff00');
-        combatLog.push(`Sniper hits furthest enemy for ${defenderType.damage}`);
+        furthestEnemy.flashTimer = 0.2;
       }
     }
   }
   
-  // Step 4: Mortars deal area damage
+  // MORTAR: area damage within 1-tile radius
   for (const defender of state.defenders) {
     if (defender.hp <= 0) continue;
     
     const defenderType = DEFENDER_TYPES[defender.type];
-    if (defenderType.areaDamage) {
+    if (defenderType.teamDamage) {
+      const enemiesInRange = [];
       for (const enemy of state.enemies) {
         if (enemy.hp <= 0) continue;
         
-        const distance = Math.abs(enemy.x - defender.x) + Math.abs(enemy.row - defender.row);
-        if (distance <= 1) { // 1 tile radius including diagonals
+        const distance = Math.abs(enemy.col - defender.col) + Math.abs(enemy.row - defender.row);
+        if (distance <= 1) {
+          enemiesInRange.push(enemy);
+        }
+      }
+      
+      if (enemiesInRange.length > 0) {
+        for (const enemy of enemiesInRange) {
           enemy.hp -= defenderType.damage;
           addDamageNumber(enemy.x, enemy.y - 20, defenderType.damage, '#ff8800');
-          combatLog.push(`Mortar hits enemy for ${defenderType.damage}`);
+          enemy.flashTimer = 0.2;
         }
       }
     }
   }
   
-  // Step 5: Mechanics heal adjacent defenders
+  // OVERCLOCKER: double attack on same tile
+  for (const defender of state.defenders) {
+    if (defender.hp <= 0) continue;
+    
+    const defenderType = DEFENDER_TYPES[defender.type];
+    if (defenderType.doubleAttack) {
+      const enemyOnTile = state.enemies.find(e => 
+        e.hp > 0 && e.row === defender.row && e.col === defender.col
+      );
+      
+      if (enemyOnTile) {
+        // First hit
+        enemyOnTile.hp -= defenderType.damage;
+        addDamageNumber(enemyOnTile.x, enemyOnTile.y - 20, defenderType.damage, '#ff00ff');
+        
+        // Second hit (if enemy survives)
+        if (enemyOnTile.hp > 0) {
+          enemyOnTile.hp -= defenderType.damage;
+          addDamageNumber(enemyOnTile.x, enemyOnTile.y - 35, defenderType.damage, '#ff00ff');
+        }
+        
+        enemyOnTile.flashTimer = 0.2;
+      }
+    }
+  }
+  
+  // MECHANIC: heal adjacent defenders
   for (const defender of state.defenders) {
     if (defender.hp <= 0) continue;
     
@@ -437,109 +666,147 @@ function resolveCombat() {
       for (const otherDefender of state.defenders) {
         if (otherDefender.hp <= 0 || otherDefender === defender) continue;
         
-        const distance = Math.abs(otherDefender.x - defender.x) + Math.abs(otherDefender.row - defender.row);
-        if (distance <= 1) { // Adjacent including diagonals
+        const distance = Math.abs(otherDefender.col - defender.col) + Math.abs(otherDefender.row - defender.row);
+        if (distance <= 1) {
           const maxHP = DEFENDER_TYPES[otherDefender.type].hp;
           const healAmount = Math.min(defenderType.healAmount, maxHP - otherDefender.hp);
           if (healAmount > 0) {
             otherDefender.hp += healAmount;
             addDamageNumber(otherDefender.x, otherDefender.y - 20, healAmount, '#00ffff');
-            combatLog.push(`Mechanic heals ${otherDefender.type} for ${healAmount}`);
+            otherDefender.flashTimer = 0.2;
           }
         }
       }
     }
   }
-  
-  // Remove dead units and track defeats
-  const initialEnemyCount = state.enemies.length;
-  state.enemies = state.enemies.filter(e => e.hp > 0);
-  state.defenders = state.defenders.filter(d => d.hp > 0);
-  
-  // Track defeated enemies
-  const enemiesDefeated = initialEnemyCount - state.enemies.length;
-  state.totalEnemiesDefeated += enemiesDefeated;
 }
 
 function advanceEnemies() {
-  // Handle wave spawning (one enemy per turn)
-  if (state.waveSpawnQueue.length > 0) {
-    const enemyType = state.waveSpawnQueue.shift();
-    const row = Math.floor(Math.random() * ROWS);
-    const y = getRowGroundY(row);
-    const typeConfig = ENEMY_TYPES[enemyType];
-    
-    const newEnemy = {
-      type: enemyType,
-      row,
-      x: GRID_WIDTH - CELL_SIZE, // Rightmost tile
-      y,
-      hp: typeConfig.hp,
-      maxHp: typeConfig.hp,
-      damage: typeConfig.damage,
-      flashTimer: 0,
-      hasTakenDamage: false,
-    };
-    state.enemies.push(newEnemy);
-    state.waveInitialHP += typeConfig.hp;
+  // STEP 1: ENEMY SPAWN (start of enemy turn)
+  const currentWaveTurn = state.turn;
+  const waveEntry = WAVE_SCRIPT.find(entry => entry.turn === currentWaveTurn);
+  
+  if (waveEntry && waveEntry.enemies) {
+    for (const enemyType of waveEntry.enemies) {
+      const row = Math.floor(Math.random() * ROWS);
+      const typeConfig = ENEMY_TYPES[enemyType];
+      
+      const newEnemy = {
+        type: enemyType,
+        row,
+        col: COLS - 1, // Rightmost column
+        x: (COLS - 1) * CELL_SIZE + CELL_SIZE / 2,
+        y: getRowGroundY(row),
+        hp: typeConfig.hp,
+        maxHp: typeConfig.hp,
+        damage: typeConfig.damage,
+        flashTimer: 0,
+        hasTakenDamage: false,
+      };
+      state.enemies.push(newEnemy);
+    }
   }
   
-  // Move enemies one tile left
+  // STEP 2: ENEMY MOVEMENT
   for (const enemy of state.enemies) {
-    if (enemy.hp > 0) {
-      enemy.x -= CELL_SIZE;
+    if (enemy.hp <= 0) continue;
+    
+    // Check if tile to the left is occupied by a defender
+    const leftCol = enemy.col - 1;
+    const isBlocked = state.defenders.some(d => 
+      d.hp > 0 && d.row === enemy.row && d.col === leftCol
+    );
+    
+    if (isBlocked) {
+      // Enemy is blocked - does NOT move, will attack in step 3
+      enemy.wasBlocked = true;
+    } else {
+      // Enemy can move one tile left
+      enemy.col -= 1;
+      enemy.x = enemy.col * CELL_SIZE + CELL_SIZE / 2;
+      enemy.wasBlocked = false;
       
-      // Check if enemy reached left edge
-      if (enemy.x < 0) {
+      // Check defeat condition
+      if (enemy.col < 0) {
         showGameOver(false);
         return;
       }
     }
   }
   
-  // Resolve combat after movement
-  resolveCombat();
-  
-  // Check wave completion triggers
-  state.waveTurnCounter++;
-  const currentTotalHP = state.enemies.reduce((sum, e) => sum + e.hp, 0);
-  
-  // HP trigger: 50% of initial HP
-  if (!state.nextWaveReady && currentTotalHP <= state.waveInitialHP * 0.5) {
-    state.nextWaveReady = true;
+  // STEP 3: ENEMY ATTACKS (for blocked enemies)
+  for (const enemy of state.enemies) {
+    if (enemy.hp <= 0 || !enemy.wasBlocked) continue;
+    
+    const leftCol = enemy.col + 1; // Enemy didn't move, so defender is to the right
+    const blockingDefender = state.defenders.find(d => 
+      d.hp > 0 && d.row === enemy.row && d.col === leftCol
+    );
+    
+    if (blockingDefender) {
+      const enemyType = ENEMY_TYPES[enemy.type];
+      const defenderType = DEFENDER_TYPES[blockingDefender.type];
+      
+      // Simultaneous damage
+      enemy.hp -= defenderType.damage;
+      blockingDefender.hp -= enemyType.damage;
+      
+      // Damage numbers
+      addDamageNumber(enemy.x, enemy.y - 20, defenderType.damage, '#00ff00');
+      addDamageNumber(blockingDefender.x, blockingDefender.y - 20, enemyType.damage, '#ff0000');
+      
+      enemy.flashTimer = 0.2;
+      blockingDefender.flashTimer = 0.2;
+    }
   }
   
-  // Timer trigger: 8 turns
-  if (!state.nextWaveReady && state.waveTurnCounter >= 8) {
-    state.nextWaveReady = true;
+  // STEP 4: SPECIAL ATTACKER RESOLUTION
+  resolveSpecialAttackers();
+  
+  // STEP 5: CLEANUP
+  const initialEnemyCount = state.enemies.length;
+  state.enemies = state.enemies.filter(e => e.hp > 0);
+  state.defenders = state.defenders.filter(d => d.hp > 0);
+  const enemiesDefeated = initialEnemyCount - state.enemies.length;
+  state.totalEnemiesDefeated += enemiesDefeated;
+  
+  // Check win condition
+  if (state.turn > 16 && state.enemies.length === 0) {
+    showVictory();
+    return;
   }
   
-  // Start next wave if ready and current queue is empty (max 5 waves)
-  if (state.nextWaveReady && state.waveSpawnQueue.length === 0 && state.wave < 5) {
-    state.wave++;
-    startWave(state.wave);
-  }
+  // STEP 6: PRODUCER INCOME (start of player turn)
+  resolveProducers();
   
-  // Check win condition: all waves complete and no enemies left
-  if (state.wave >= 5 && state.waveSpawnQueue.length === 0 && state.enemies.length === 0) {
-    showGameOver(true);
-  }
-  
-  // Start next turn
+  // Increment turn and start player turn
   state.turn++;
   startTurn();
 }
 
-function getWaveBudget(waveNumber) {
-  const fixedWaveBudgets = {
-    1: 2,   // Wave 1: 2 points
-    2: 4,   // Wave 2: 4 points
-    3: 7,   // Wave 3: 7 points
-    4: 11,  // Wave 4: 11 points
-    5: 16   // Wave 5: 16 points (final wave)
-  };
-  
-  return fixedWaveBudgets[waveNumber] || 0;
+const WAVE_SCRIPT = [
+  { turn: 1,  enemies: ["basic", "basic"] },
+  { turn: 3,  enemies: ["basic", "basic"] },
+  { turn: 5,  enemies: ["basic", "basic"] },
+  { turn: 6,  enemies: ["basic", "basic"] },
+  { turn: 8,  enemies: ["basic", "basic", "basic"] },
+  { turn: 10, enemies: ["basic", "basic", "basic", "conehead"] },
+  { turn: 12, enemies: ["conehead", "conehead", "basic", "basic", "basic"] },
+  { turn: 14, enemies: ["buckethead", "basic", "basic"] },
+  { turn: 16, enemies: ["buckethead", "conehead", "basic"] }
+];
+
+function getTotalEnemiesInWave() {
+  return WAVE_SCRIPT.reduce((total, entry) => total + entry.enemies.length, 0);
+}
+
+function showVictory() {
+  state.gameStatus = 'win';
+  gameOverScreen.style.display = 'flex';
+  gameOverTitle.textContent = 'Victory';
+  gameOverTitle.className = 'game-over-title victory';
+  gameOverMessage.textContent = 'The line held.';
+  gameOverStats.textContent = `Survived ${state.turn} turns • Defeated ${state.totalEnemiesDefeated} enemies`;
 }
 
 function generateWaveSpawnQueue(waveNumber) {
@@ -600,7 +867,7 @@ function startWave(waveNumber) {
 
 function updateTurnUI() {
   availablePointsDisplay.textContent = state.availablePoints;
-  bankedPointsDisplay.textContent = state.bankedPoints;
+  bankedPointsDisplay.textContent = `${state.bankedPoints}/${state.effectiveBankCap}`;
   turnDisplay.textContent = `Turn ${state.turn} | Wave ${state.wave}`;
   
   const phaseText = {
@@ -620,6 +887,12 @@ function updateTurnUI() {
     diceDisplay.style.cursor = 'default';
   }
   
+  // Show current die type
+  const dieTypeDisplay = document.getElementById('dieTypeDisplay');
+  if (dieTypeDisplay) {
+    dieTypeDisplay.textContent = `d${state.currentDieSides}`;
+  }
+  
   // Enable/disable end turn button
   endTurnBtn.disabled = state.turnPhase !== 'placing';
 }
@@ -633,22 +906,38 @@ function updateDefenderSelectionUI() {
     
     card.classList.remove('selected', 'disabled');
     
+    // Only show selected loadout units
+    if (state.selectedLoadout.length > 0 && !state.selectedLoadout.includes(type)) {
+      card.style.display = 'none';
+      return;
+    }
+    
+    card.style.display = 'block';
+    
     if (state.selectedDefenderType === type) {
       card.classList.add('selected');
     }
     
-    const canAfford = state.availablePoints >= defenderType.cost && state.turnPhase === 'placing' && state.diceRolled;
+    // Handle dynamic cost for Upgrader
+    let actualCost = defenderType.cost;
+    if (type === 'upgrader') {
+      actualCost = 3 + (state.upgraderCount * 2);
+      if (state.upgraderCount >= 4) actualCost = 11;
+      // Update cost display
+      const costElement = card.querySelector('.card-cost');
+      if (costElement) costElement.textContent = actualCost;
+    }
+    
+    const canAfford = state.availablePoints >= actualCost && state.turnPhase === 'placing' && state.diceRolled;
     
     if (!canAfford) {
       card.classList.add('disabled');
       overlay.style.display = 'flex';
       overlay.textContent = '🔒';
-      // Make cost text red
       const costElement = card.querySelector('.card-cost');
       costElement.style.color = '#ff4444';
     } else {
       overlay.style.display = 'none';
-      // Reset cost text color
       const costElement = card.querySelector('.card-cost');
       costElement.style.color = '#ffd700';
     }
@@ -1247,16 +1536,61 @@ function tryPlaceDefender(x, y) {
   if (!isInsideGrid(x, y) || state.turnPhase !== 'placing') {
     return;
   }
+  
   const defenderType = DEFENDER_TYPES[state.selectedDefenderType];
-  if (state.availablePoints < defenderType.cost) {
+  
+  // Handle Upgrader dynamic cost
+  let actualCost = defenderType.cost;
+  if (state.selectedDefenderType === 'upgrader') {
+    actualCost = 3 + (state.upgraderCount * 2);
+    if (state.upgraderCount >= 4) actualCost = 11; // Cap at 11
+  }
+  
+  if (state.availablePoints < actualCost) {
     return;
   }
+  
   const col = Math.floor(x / CELL_SIZE);
   const row = Math.floor(y / CELL_SIZE);
   const occupied = state.defenders.some((defender) => defender.row === row && defender.col === col);
   if (occupied) {
     return;
   }
+  
+  // Handle Obliterator special placement
+  if (defenderType.onPlacement) {
+    // Kill all enemies in the lane
+    const enemiesInLane = state.enemies.filter(e => e.row === row && e.hp > 0);
+    for (const enemy of enemiesInLane) {
+      addDamageNumber(enemy.x, enemy.y - 20, 'OBLITERATED', '#ff2200');
+    }
+    state.enemies = state.enemies.filter(e => !(e.row === row && e.hp > 0));
+    
+    // Add lane flash effect
+    state.laneFlashTimers.push({ row, timer: 0.3 });
+    
+    // Don't actually place the Obliterator
+    state.availablePoints -= actualCost;
+    updateTurnUI();
+    return;
+  }
+  
+  // Handle Upgrader special placement
+  if (defenderType.producerType === 'dieUpgrade') {
+    const dieLadder = [4, 6, 8, 10, 12, 20];
+    if (state.dieUpgradeLevel < dieLadder.length - 1) {
+      state.dieUpgradeLevel++;
+      state.currentDieSides = dieLadder[state.dieUpgradeLevel];
+    }
+    state.upgraderCount++;
+    
+    // Don't actually place the Upgrader
+    state.availablePoints -= actualCost;
+    updateTurnUI();
+    return;
+  }
+  
+  // Normal placement
   const center = getCellCenter(row, col);
   state.defenders.push({
     type: state.selectedDefenderType,
@@ -1269,7 +1603,8 @@ function tryPlaceDefender(x, y) {
     flashTimer: 0,
     hasTakenDamage: false,
   });
-  state.availablePoints -= defenderType.cost;
+  
+  state.availablePoints -= actualCost;
   state.placementHighlights.push({ row, col, timer: FLASH_DURATION });
   updateTurnUI();
 }
@@ -1334,6 +1669,22 @@ function update(dt) {
   }
 }
 
+function drawLaneFlash() {
+  for (let i = state.laneFlashTimers.length - 1; i >= 0; i--) {
+    const flash = state.laneFlashTimers[i];
+    if (flash.timer <= 0) {
+      state.laneFlashTimers.splice(i, 1);
+      continue;
+    }
+    
+    const alpha = flash.timer / 0.3; // 0.3 second duration
+    ctx.fillStyle = `rgba(255, 34, 0, ${alpha * 0.5})`;
+    ctx.fillRect(0, flash.row * CELL_SIZE, GRID_WIDTH, CELL_SIZE);
+    
+    flash.timer -= 0.016; // Assuming 60 FPS
+  }
+}
+
 function render() {
   ctx.save();
   ctx.translate(state.screenShakeX, state.screenShakeY);
@@ -1344,6 +1695,7 @@ function render() {
   drawDefenders();
   drawEnemies();
   drawDamageNumbers();
+  drawLaneFlash(); // Add lane flash effect
   
   ctx.restore();
   
@@ -1360,6 +1712,7 @@ function render() {
     ctx.fillText("Paused", GRID_WIDTH / 2, GRID_HEIGHT / 2);
     ctx.textAlign = "start";
   }
+  
   updateTurnUI();
 }
 
@@ -1410,11 +1763,72 @@ document.querySelectorAll('.defender-card').forEach(card => {
   });
 });
 
-diceDisplay.addEventListener('click', handleDiceClick);
-endTurnBtn.addEventListener('click', endTurn);
-pauseBtn.addEventListener('click', togglePause);
-beginBtn.addEventListener('click', beginGame);
-retryBtn.addEventListener('click', resetGame);
-document.addEventListener('keydown', handleKeyPress);
-canvas.addEventListener("click", handleCanvasClick);
+function populateDefenderCards() {
+  const defenderSelection = document.getElementById('defenderSelection');
+  if (!defenderSelection) return;
+  
+  defenderSelection.innerHTML = '';
+  
+  // Only show units that are in the player's loadout
+  const availableUnits = state.playerLoadout || ['rifleman', 'shotgunner', 'barricade', 'mechanic', 'ticker'];
+  
+  for (const unitType of availableUnits) {
+    const defenderType = DEFENDER_TYPES[unitType];
+    if (!defenderType) continue;
+    
+    const card = document.createElement('div');
+    card.className = 'defender-card';
+    card.dataset.type = unitType;
+    card.dataset.cost = defenderType.cost;
+    
+    // Create card content
+    let description = `${defenderType.name} (${defenderType.cost} pts)`;
+    if (defenderType.damage > 0) description += ` - ${defenderType.damage} dmg`;
+    if (defenderType.healAmount > 0) description += ` - Heal ${defenderType.healAmount} HP`;
+    if (defenderType.blocksMovement) description += ` - Block movement`;
+    if (defenderType.attacksAllInLane) description += ` - All enemies in lane`;
+    if (defenderType.producerType) description += ` - Produce ${defenderType.productionValue}`;
+    
+    card.textContent = description;
+    
+    // Add click handler
+    card.addEventListener('click', () => {
+      if (state.availablePoints >= defenderType.cost && state.turnPhase === 'placing') {
+        state.selectedDefenderType = unitType;
+        updateTurnUI();
+        
+        // Update visual selection
+        document.querySelectorAll('.defender-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+      }
+    });
+    
+    defenderSelection.appendChild(card);
+  }
+}
+
+function setupEventListeners() {
+  canvas.addEventListener("click", handleCanvasClick);
+  
+  if (diceDisplay) diceDisplay.addEventListener('click', handleDiceClick);
+  if (endTurnBtn) endTurnBtn.addEventListener('click', endTurn);
+  if (pauseBtn) pauseBtn.addEventListener('click', togglePause);
+  if (beginBtn) beginBtn.addEventListener('click', beginGame);
+  if (retryBtn) retryBtn.addEventListener('click', resetGame);
+  
+  document.addEventListener('keydown', handleKeyPress);
+}
+
+setupEventListeners();
+
+// Initialize game with loadout screen
+if (state.showLoadoutScreen) {
+  showLoadoutScreen();
+} else {
+  // Skip loadout screen and go directly to game
+  populateDefenderCards();
+  startWave(1);
+  startTurn();
+}
+
 requestAnimationFrame(gameLoop);
